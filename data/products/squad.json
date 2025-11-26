@@ -1,0 +1,86 @@
+{
+  "slug": "squad-cheat",
+  "title": "Squad",
+  "subtitle": "Advanced Squad multiplayer cheat",
+  "description": "Tactical advantage for Squad with ESP, aimbot, vehicle spawner, and team coordination features.",
+  "heroImageUrl": "/img/squad.png",
+  "category": "squad",
+  "status": "ACTIVE",
+  "systemRequirements": [
+    { "icon": "cpu", "label": "INTEL/AMD CPU Support" },
+    { "icon": "monitor", "label": "DirectX 11/12" },
+    { "icon": "monitor", "label": "Windows 10/11" },
+    { "icon": "shield", "label": "Secure Injection" }
+  ],
+  "plans": [
+    {
+      "id": "daily",
+      "name": "Daily",
+      "priceString": "$8",
+      "priceNumber": 8,
+      "period": "/day",
+      "popular": false
+    },
+    {
+      "id": "weekly",
+      "name": "Weekly",
+      "priceString": "$25",
+      "priceNumber": 25,
+      "period": "/week",
+      "popular": true
+    },
+    {
+      "id": "monthly",
+      "name": "Monthly",
+      "priceString": "$70",
+      "priceNumber": 70,
+      "period": "/month",
+      "popular": false
+    }
+  ],
+  "features": [
+    {
+      "id": "aimbot",
+      "title": "Aimbot",
+      "description": "Precision targeting",
+      "items": [
+        "Smooth Aim",
+        "FOV Circle",
+        "Visibility Check",
+        "Target Lock",
+        "Distance Limit",
+        "Hitbox Selection"
+      ]
+    },
+    {
+      "id": "esp",
+      "title": "ESP / Visuals",
+      "description": "Tactical awareness",
+      "items": [
+        "Player ESP",
+        "Vehicle ESP",
+        "Supply ESP",
+        "Distance Display",
+        "Health Bars",
+        "Team Indicators"
+      ]
+    },
+    {
+      "id": "misc",
+      "title": "Misc Features",
+      "description": "Additional tools",
+      "items": [
+        "No Recoil",
+        "No Spread",
+        "Radar Hack",
+        "Speed Modifier",
+        "Vehicle Teleport",
+        "Unlimited Stamina"
+      ]
+    }
+  ],
+  "flags": {
+    "isPublic": true,
+    "isUpdating": false
+  }
+}

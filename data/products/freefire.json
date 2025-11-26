@@ -1,0 +1,86 @@
+{
+  "slug": "freefire-cheat",
+  "title": "Free Fire",
+  "subtitle": "Ultimate Free Fire cheat with Aimbot and ESP",
+  "description": "Dominate Free Fire with our advanced cheat featuring aimbot, ESP, speed hack, and anti-ban protection.",
+  "heroImageUrl": "/img/freefire.png",
+  "category": "freefire",
+  "status": "ACTIVE",
+  "systemRequirements": [
+    { "icon": "smartphone", "label": "Android 7.0+ or iOS 12+" },
+    { "icon": "cpu", "label": "Minimum 2GB RAM" },
+    { "icon": "wifi", "label": "Stable Internet Connection" },
+    { "icon": "shield", "label": "Root/Jailbreak Optional" }
+  ],
+  "plans": [
+    {
+      "id": "daily",
+      "name": "Daily",
+      "priceString": "$5",
+      "priceNumber": 5,
+      "period": "/day",
+      "popular": false
+    },
+    {
+      "id": "weekly",
+      "name": "Weekly",
+      "priceString": "$15",
+      "priceNumber": 15,
+      "period": "/week",
+      "popular": true
+    },
+    {
+      "id": "monthly",
+      "name": "Monthly",
+      "priceString": "$40",
+      "priceNumber": 40,
+      "period": "/month",
+      "popular": false
+    }
+  ],
+  "features": [
+    {
+      "id": "aimbot",
+      "title": "Aimbot",
+      "description": "Auto-aim and target lock",
+      "items": [
+        "Auto Headshot",
+        "FOV Adjuster",
+        "Smooth Aim",
+        "Target Priority",
+        "Prediction",
+        "Quick Scope"
+      ]
+    },
+    {
+      "id": "esp",
+      "title": "ESP / Wallhack",
+      "description": "See through walls",
+      "items": [
+        "Player ESP",
+        "Item ESP",
+        "Vehicle ESP",
+        "Distance Info",
+        "Health Display",
+        "Name Tags"
+      ]
+    },
+    {
+      "id": "movement",
+      "title": "Movement Hacks",
+      "description": "Enhanced mobility",
+      "items": [
+        "Speed Hack",
+        "Fly Mode",
+        "Teleport",
+        "Anti-Fall Damage",
+        "No Grass",
+        "No Fog"
+      ]
+    }
+  ],
+  "flags": {
+    "isPublic": true,
+    "isUpdating": false
+  }
+}

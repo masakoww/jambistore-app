@@ -1,0 +1,139 @@
+{
+  "slug": "fivem-cheat",
+  "title": "FiveM",
+  "subtitle": "The most advanced trolling, PvP, and modding tool",
+  "description": "Comprehensive FiveM menu with vehicle spawner, player manipulation, ESP, aimbot, and 100+ features for ultimate server control.",
+  "heroImageUrl": "/img/fivem-banner.png",
+  "category": "fivem",
+  "status": "ACTIVE",
+  "systemRequirements": [
+    { "icon": "cpu", "label": "INTEL/AMD CPU Support" },
+    { "icon": "monitor", "label": "DirectX 11/12" },
+    { "icon": "monitor", "label": "Windows 10/11" },
+    { "icon": "check", "label": "Adhesive Supported" }
+  ],
+  "plans": [
+    {
+      "id": "weekly",
+      "name": "Weekly",
+      "priceString": "$13",
+      "priceNumber": 13,
+      "period": "/week",
+      "popular": false
+    },
+    {
+      "id": "monthly",
+      "name": "Monthly",
+      "priceString": "$20",
+      "priceNumber": 20,
+      "period": "/month",
+      "popular": false
+    },
+    {
+      "id": "lifetime",
+      "name": "Lifetime",
+      "priceString": "$82",
+      "priceNumber": 82,
+      "period": "/lifetime",
+      "popular": true
+    }
+  ],
+  "features": [
+    {
+      "id": "aimbot",
+      "title": "Aimbot",
+      "description": "Advanced targeting system",
+      "items": [
+        "Enable / Disable Key",
+        "Show FOV Circle",
+        "Field of View Radius",
+        "Smoothing Slider",
+        "Max Distance",
+        "Hitbox Selection (Head / Chest / Arms / Legs)",
+        "Smart Target Prioritization",
+        "Randomized Hitbox",
+        "Delay Before Snap",
+        "Interpolation Prediction"
+      ]
+    },
+    {
+      "id": "silent-aim",
+      "title": "Silent Aim / Magic Bullet",
+      "description": "Invisible targeting",
+      "items": [
+        "Enable / Disable Key",
+        "Magic Bullet / Smart Bullet",
+        "Bullet TP",
+        "Rage Silent Toggle",
+        "FOV Ring for Silent Aim",
+        "Randomized Bullet Hitbox",
+        "Bullet Curving AI (Homing)",
+        "Auto Penetration Check"
+      ]
+    },
+    {
+      "id": "esp",
+      "title": "ESP / Visuals",
+      "description": "See everything",
+      "items": [
+        "Container / Chest ESP",
+        "Money / Cash Stack ESP",
+        "Skeleton / 3D Skeleton",
+        "Box / Corner / Glow",
+        "Health / Armor Bars",
+        "Weapon / Ammo ESP",
+        "Player ID, Distance, Status",
+        "Vehicle ESP",
+        "Tracers",
+        "Spectator List"
+      ]
+    },
+    {
+      "id": "movement",
+      "title": "Self Player / Movement",
+      "description": "Character modifications",
+      "items": [
+        "Walk on Air",
+        "Fly Hack",
+        "Speed Modifier",
+        "Invisible Player",
+        "Super Jump",
+        "No Fall Damage",
+        "Noclip",
+        "Auto Parachute"
+      ]
+    },
+    {
+      "id": "weapons",
+      "title": "Weapon Mods",
+      "description": "Weapon enhancements",
+      "items": [
+        "Weapon Spawner",
+        "Infinite Ammo",
+        "No Recoil / No Spread",
+        "One Tap Kill",
+        "Fire Rate Modifier",
+        "Silent Fire",
+        "Auto Triggerbot"
+      ]
+    },
+    {
+      "id": "vehicle",
+      "title": "Vehicle Control",
+      "description": "Vehicle spawner and mods",
+      "items": [
+        "Spawn Vehicle",
+        "Bulletproof / Invincible",
+        "Nitro Boost",
+        "Jump Vehicle / Fly Mode",
+        "Auto Repair",
+        "Drive On Water",
+        "Neon Underglow"
+      ]
+    }
+  ],
+  "flags": {
+    "isPublic": true,
+    "isUpdating": false
+  }
+}

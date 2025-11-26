@@ -1,0 +1,86 @@
+{
+  "slug": "fortnite-cheat",
+  "title": "Fortnite",
+  "subtitle": "Advanced Fortnite cheat with ESP, Aimbot, and more",
+  "description": "The most powerful and undetected Fortnite cheat available. Features include advanced ESP, customizable aimbot, skin changer, and much more.",
+  "heroImageUrl": "/img/fornite.png",
+  "category": "fortnite",
+  "status": "ACTIVE",
+  "systemRequirements": [
+    { "icon": "cpu", "label": "INTEL/AMD CPU Support" },
+    { "icon": "monitor", "label": "DirectX 11/12 Graphics API" },
+    { "icon": "monitor", "label": "Windows 10/11 Operating System" },
+    { "icon": "shield", "label": "Secure Injection Method" }
+  ],
+  "plans": [
+    {
+      "id": "daily",
+      "name": "Daily",
+      "priceString": "$10",
+      "priceNumber": 10,
+      "period": "/day",
+      "popular": false
+    },
+    {
+      "id": "weekly",
+      "name": "Weekly",
+      "priceString": "$30",
+      "priceNumber": 30,
+      "period": "/week",
+      "popular": true
+    },
+    {
+      "id": "monthly",
+      "name": "Monthly",
+      "priceString": "$80",
+      "priceNumber": 80,
+      "period": "/month",
+      "popular": false
+    }
+  ],
+  "features": [
+    {
+      "id": "aimbot",
+      "title": "Aimbot",
+      "description": "Advanced targeting system",
+      "items": [
+        "Smooth Aim",
+        "FOV Circle",
+        "Visibility Check",
+        "Target Lock",
+        "Prediction",
+        "Hitbox Selection"
+      ]
+    },
+    {
+      "id": "esp",
+      "title": "ESP / Visuals",
+      "description": "See everything on the map",
+      "items": [
+        "Player ESP",
+        "Loot ESP",
+        "Vehicle ESP",
+        "Distance Display",
+        "Health Bars",
+        "Skeleton ESP"
+      ]
+    },
+    {
+      "id": "misc",
+      "title": "Misc Features",
+      "description": "Additional enhancements",
+      "items": [
+        "No Recoil",
+        "No Spread",
+        "Rapid Fire",
+        "Infinite Ammo",
+        "Speed Hack",
+        "Fly Mode"
+      ]
+    }
+  ],
+  "flags": {
+    "isPublic": true,
+    "isUpdating": false
+  }
+}

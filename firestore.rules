@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Check if user has admin custom claim
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isEmailOwner(email) {
+      return isSignedIn() && request.auth.token.email == email;
+    }
+    
+    // Validate numeric field is non-negative
+    function isValidNumber(value) {
+      return value is number && value >= 0;
+    }
+    
+    // Validate order status enum
+    function isValidOrderStatus(status) {
+      return status in [
+        'PENDING', 'PENDING_PAYMENT', 'AWAITING_PAYMENT', 'PAID',
+        'PROCESSING', 'PENDING_ADMIN', 'COMPLETED', 'SUCCESS',
+        'FAILED', 'CANCELLED', 'EXPIRED'
+      ];
+    }
+
+    // ============================================
+    // USERS COLLECTION
+    // ============================================
+    
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      // Users cannot self-promote to admin
+      allow write: if isOwner(userId) 
+        && (!('role' in request.resource.data) || request.resource.data.role != 'admin');
+      
+      // User transactions subcollection
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if false; // Server-side only via Admin SDK
+      }
+    }
+
+    // ============================================
+    // ORDERS COLLECTION (HARDENED)
+    // ============================================
+    
+    match /orders/{orderId} {
+      // Users can create orders ONLY with PENDING status
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'PENDING'
+        && request.resource.data.customerEmail == request.auth.token.email
+        && isValidNumber(request.resource.data.amount)
+        // Clients CANNOT set these fields on creation
+        && !('payment' in request.resource.data)
+        && !('delivery' in request.resource.data)
+        && !('profit' in request.resource.data);
+      
+      // Users can read their own orders, admins can read all
+      allow read: if isSignedIn() && (
+        resource.data.email == request.auth.token.email ||
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // ONLY admins can update orders (prevents client tampering)
+      allow update: if isAdmin();
+      
+      // Only admins can delete orders
+      allow delete: if isAdmin();
+      
+      // Audit log subcollection (server/admin writes only)
+      match /auditLog/{logId} {
+        allow read: if isOwner(get(/databases/$(database)/documents/orders/$(orderId)).data.userId) 
+                    || isAdmin();
+        allow write: if false; // Use Firebase Admin SDK only
+      }
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read: if isOwner(get(/databases/$(database)/documents/orders/$(orderId)).data.userId) 
+                    || isAdmin();
+        allow create: if isSignedIn()
+          && (isOwner(get(/databases/$(database)/documents/orders/$(orderId)).data.userId) || isAdmin())
+          && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if false; // Messages are immutable
+      }
+    }
+
+    // ============================================
+    // PRODUCTS COLLECTION (HARDENED)
+    // ============================================
+    
+    match /products/{productId} {
+      // Public read access (catalog)
+      allow read: if true;
+      
+      // Only admins can write products
+      // Validate critical fields on create
+      allow create: if isAdmin()
+        && request.resource.data.slug is string
+        && request.resource.data.title is string
+        && isValidNumber(request.resource.data.capitalCost)
+        && isValidNumber(request.resource.data.price.IDR)
+        && isValidNumber(request.resource.data.price.USD);
+      
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // CATEGORIES COLLECTION (ADMIN-ONLY WRITE)
+    // ============================================
+    match /categories/{categoryId} {
+      // Admins can read categories; public access is via server-side API
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // STOCK COLLECTION (ADMIN-ONLY ACCESS)
+    // ============================================
+    
+    match /stock/{productSlug}/items/{itemId} {
+      // CRITICAL: Clients must NEVER access stock items
+      // Only admin and server-side Firebase Admin SDK
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ============================================
+    // SETTINGS COLLECTION
+    // ============================================
+    
+    match /settings/{document=**} {
+      allow read: if true; // Public read for website context
+      allow write: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner');
+    }
+
+    // ============================================
+    // SUPPORT TICKETS
+    // ============================================
+    
+    match /support/{ticketId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.email == request.auth.token.email ||
+        isAdmin()
+      );
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.email == request.auth.token.email;
+      allow update: if isAdmin(); // Only admins can update/close tickets
+      allow delete: if isAdmin();
+      
+      match /messages/{messageId} {
+        allow read: if isOwner(get(/databases/$(database)/documents/support/$(ticketId)).data.userId) 
+                    || isAdmin();
+        allow create: if isSignedIn()
+          && (isOwner(get(/databases/$(database)/documents/support/$(ticketId)).data.userId) || isAdmin());
+        allow update, delete: if false;
+      }
+    }
+
+    // ============================================
+    // ANALYTICS (SERVER-SIDE ONLY)
+    // ============================================
+    
+    match /analytics/{doc=**} {
+      allow read: if isAdmin();
+      allow write: if false; // Server-side only
+    }
+
+    // ============================================
+    // DEFAULT DENY ALL
+    // ============================================
+    
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
