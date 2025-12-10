@@ -52,9 +52,9 @@ function TrackOrderContent() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
 
-  // Auto-load if orderId in URL
+  // Auto-load if orderId in URL (support both ?order and ?orderId)
   useEffect(() => {
-    const orderParam = searchParams.get('order');
+    const orderParam = searchParams.get('order') || searchParams.get('orderId');
     const from = searchParams.get('from');
 
     if (from === 'payment-locked') {

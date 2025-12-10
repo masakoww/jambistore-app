@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
       customerEmail,
       customerPhone,
       returnUrl: `${baseUrl}/dashboard`,
-      cancelUrl: `${baseUrl}/payment?orderId=${orderId}`,
+      cancelUrl: `${baseUrl}/track?orderId=${orderId}`,
       notifyUrl: `${baseUrl}/api/webhook/${selectedGateway}`,
     };
 

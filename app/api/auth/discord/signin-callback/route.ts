@@ -134,6 +134,7 @@ export async function GET(request: NextRequest) {
           lastLoginAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
           authProvider: 'discord',
+          role: 'user',
         });
 
         console.log('✅ User document created');

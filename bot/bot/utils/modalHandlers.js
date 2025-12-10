@@ -148,12 +148,34 @@ async function handleDeliveryModal(interaction) {
   let type = '';
 
   if (customId === 'account_modal') {
+    // Prevent double-sending: if already delivered, notify and stop
+    if (orderData.delivery && orderData.delivery.status === 'DELIVERED') {
+      const deliveredBy = orderData.delivery.deliveredBy || 'Unknown';
+      const deliveredAt = orderData.delivery.deliveredAt;
+      let deliveredAtStr = 'Unknown';
+      try {
+        deliveredAtStr = deliveredAt && deliveredAt.toDate ? deliveredAt.toDate().toLocaleString('id-ID') : (deliveredAt ? new Date(deliveredAt).toLocaleString('id-ID') : 'Unknown');
+      } catch (e) {}
+      return interaction.followUp({ content: `❌ The product already sent by admin ${deliveredBy} at ${deliveredAtStr}`, ephemeral: true });
+    }
+
     const user = interaction.fields.getTextInputValue('username');
     const pass = interaction.fields.getTextInputValue('password');
     const note = interaction.fields.getTextInputValue('keterangan');
     content = `Username: ${user}\nPassword: ${pass}\nNote: ${note}`;
     type = 'manual_account';
   } else if (customId === 'code_modal') {
+    // Prevent double-sending for codes as well
+    if (orderData.delivery && orderData.delivery.status === 'DELIVERED') {
+      const deliveredBy = orderData.delivery.deliveredBy || 'Unknown';
+      const deliveredAt = orderData.delivery.deliveredAt;
+      let deliveredAtStr = 'Unknown';
+      try {
+        deliveredAtStr = deliveredAt && deliveredAt.toDate ? deliveredAt.toDate().toLocaleString('id-ID') : (deliveredAt ? new Date(deliveredAt).toLocaleString('id-ID') : 'Unknown');
+      } catch (e) {}
+      return interaction.followUp({ content: `❌ The product already sent by admin ${deliveredBy} at ${deliveredAtStr}`, ephemeral: true });
+    }
+
     const code = interaction.fields.getTextInputValue('code');
     const note = interaction.fields.getTextInputValue('keterangan');
     content = `Code: ${code}\nNote: ${note}`;

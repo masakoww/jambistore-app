@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import { useWebsite } from '@/lib/websiteContext';
 
@@ -13,31 +12,11 @@ interface Review {
 }
 
 interface ProductReviewsProps {
-  productSlug: string;
+  reviews: Review[];
 }
 
-export default function ProductReviews({ productSlug }: ProductReviewsProps) {
+export default function ProductReviews({ reviews }: ProductReviewsProps) {
   const { language } = useWebsite();
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchReviews();
-  }, [productSlug]);
-
-  const fetchReviews = async () => {
-    try {
-      const response = await fetch(`/api/reviews?productSlug=${productSlug}&limit=20`);
-      const data = await response.json();
-      if (data.success) {
-        setReviews(data.reviews);
-      }
-    } catch (error) {
-      console.error('Error fetching product reviews:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -47,19 +26,6 @@ export default function ProductReviews({ productSlug }: ProductReviewsProps) {
       year: 'numeric'
     });
   };
-
-  if (loading) {
-    return (
-      <div className="mt-12 p-8 rounded-2xl bg-[#0a0a0a] border border-white/5">
-        <h2 className="text-2xl font-bold text-white mb-6">
-          {language === 'id' ? 'Ulasan Pengguna' : 'User Reviews'}
-        </h2>
-        <div className="text-center text-gray-400 py-8">
-          {language === 'id' ? 'Memuat ulasan...' : 'Loading reviews...'}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="mt-12 p-8 rounded-2xl bg-[#0a0a0a] border border-white/5">

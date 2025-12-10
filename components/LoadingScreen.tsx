@@ -97,7 +97,7 @@ export default function LoadingScreen({ onLoadingComplete }: LoadingScreenProps)
                   className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600"
                   initial={{ width: '0%' }}
                   animate={{ width: `${Math.min(progress, 100)}%` }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  transition={{ duration: 0.1, ease: 'easeOut' }}
                 >
                   <motion.div
                     className="h-full w-full"

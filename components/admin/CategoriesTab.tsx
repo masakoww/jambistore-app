@@ -40,7 +40,7 @@ export default function CategoriesTab() {
         const response = await fetch('/api/categories')
         const data = await response.json()
         
-        if (data.ok) {
+        if (data.success) {
           setCategories(data.categories || [])
         } else {
           console.error('Failed to load categories:', data.message)
@@ -98,12 +98,12 @@ export default function CategoriesTab() {
         })
 
         const data = await response.json()
-        if (data.ok) {
+        if (data.success) {
           showAlert('Category created successfully', 'success')
           // Reload categories
           const categoriesResponse = await fetch('/api/categories')
           const categoriesData = await categoriesResponse.json()
-          if (categoriesData.ok) {
+          if (categoriesData.success) {
             setCategories(categoriesData.categories || [])
           }
         } else {
@@ -122,12 +122,12 @@ export default function CategoriesTab() {
         })
 
         const data = await response.json()
-        if (data.ok) {
+        if (data.success) {
           showAlert('Category updated successfully', 'success')
           // Reload categories
           const categoriesResponse = await fetch('/api/categories')
           const categoriesData = await categoriesResponse.json()
-          if (categoriesData.ok) {
+          if (categoriesData.success) {
             setCategories(categoriesData.categories || [])
           }
         } else {
@@ -152,12 +152,12 @@ export default function CategoriesTab() {
       })
 
       const data = await response.json()
-      if (data.ok) {
+      if (data.success) {
         showAlert('Category deleted successfully', 'success')
         // Reload categories
         const categoriesResponse = await fetch('/api/categories')
         const categoriesData = await categoriesResponse.json()
-        if (categoriesData.ok) {
+        if (categoriesData.success) {
           setCategories(categoriesData.categories || [])
         }
       } else {

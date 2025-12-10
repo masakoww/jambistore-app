@@ -27,6 +27,10 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
   const [isOwner, setIsOwner] = useState(false);
   const [admins, setAdmins] = useState<any[]>([]);
   const [loadingAdmins, setLoadingAdmins] = useState(false);
+  const [targetUid, setTargetUid] = useState('');
+  const [roleToSet, setRoleToSet] = useState<'admin' | 'owner'>('admin');
+  const [settingRole, setSettingRole] = useState(false);
+  const [roleMessage, setRoleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
   // Website Settings State
   const [websiteSettings, setWebsiteSettings] = useState<WebsiteSettings>(DEFAULT_WEBSITE_SETTINGS);
@@ -266,10 +270,13 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
     setManualQRISMessage(null);
 
     try {
+      const token = await user.getIdToken();
+
       const response = await fetch('/api/settings/manual-qris', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(manualQRISSettings)
       });
@@ -302,10 +309,13 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
     setEmailMessage(null);
 
     try {
+      const token = await user.getIdToken();
+
       const response = await fetch('/api/settings/email-template', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(emailSettings)
       });
@@ -429,7 +439,7 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
                   value={websiteSettings.siteName}
                   onChange={(e) => setWebsiteSettings({ ...websiteSettings, siteName: e.target.value })}
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                  placeholder="Anonymous Store"
+                  placeholder="Jambi Store"
                 />
               </div>
 
@@ -1257,7 +1267,6 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
               <li>Advanced permission management coming in future updates</li>
             </ul>
           </div>
-
           <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
             <p className="text-yellow-300 text-sm">
               🚧 <strong>Coming Soon:</strong> Add/remove admins, customize permissions per admin, invite codes

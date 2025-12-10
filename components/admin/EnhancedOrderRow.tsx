@@ -42,6 +42,8 @@ interface EnhancedOrderRowProps {
   onOpenCodeModal: (order: Order) => void;
   onOpenRejectModal: (order: Order) => void;
   onDelete: (orderId: string) => void;
+  isSelected?: boolean;
+  onSelect?: (selected: boolean) => void;
 }
 
 export default function EnhancedOrderRow({
@@ -51,6 +53,8 @@ export default function EnhancedOrderRow({
   onOpenCodeModal,
   onOpenRejectModal,
   onDelete,
+  isSelected = false,
+  onSelect,
 }: EnhancedOrderRowProps) {
   const [isProofModalOpen, setIsProofModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -108,16 +112,26 @@ export default function EnhancedOrderRow({
     <>
       <tr className="border-t border-white/10 hover:bg-white/5">
         <td className="px-4 py-4">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            {isExpanded ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
+          <div className="flex items-center gap-2">
+            {!isRejected && onSelect && (
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => onSelect(e.target.checked)}
+                className="w-4 h-4 rounded border-white/20 bg-black/40 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+              />
             )}
-          </button>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              {isExpanded ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+          </div>
         </td>
         <td className="px-4 py-4 text-white font-mono text-xs">
           {order.id.slice(0, 8)}...
@@ -186,7 +200,7 @@ export default function EnhancedOrderRow({
       {/* Expandable Details Row */}
       {isExpanded && (
         <tr className="border-t border-white/10 bg-white/5">
-          <td colSpan={7} className="px-6 py-4">
+          <td colSpan={8} className="px-6 py-4">
             <div className="space-y-4 text-sm">
               
               {/* Customer Information */}

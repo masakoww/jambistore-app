@@ -17,7 +17,7 @@ import {
   Calendar
 } from 'lucide-react'
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { db, useAuth } from '@/lib/firebase'
 import { useModal } from '../../contexts/ModalContext'
 
 interface AdminPermissions {
@@ -70,7 +70,32 @@ export default function AdminManagementTab() {
     }
   })
 
+  // Owner-only role setter (uses server endpoint)
+  const { user } = useAuth()
+  const [isOwner, setIsOwner] = useState(false)
+  const [targetUid, setTargetUid] = useState('')
+  const [roleToSet, setRoleToSet] = useState<'admin' | 'owner'>('admin')
+  const [settingRole, setSettingRole] = useState(false)
+  const [roleMessage, setRoleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [resolvedUser, setResolvedUser] = useState<{ uid: string; email?: string; displayName?: string } | null>(null)
+
   useEffect(() => {
+    const loadRole = async () => {
+      try {
+        if (!user) return
+        const token = await user.getIdToken()
+        const res = await fetch('/api/admin/roles', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        setIsOwner(data.ok && data.role === 'owner')
+      } catch (err) {
+        console.error('Error checking owner role:', err)
+      }
+    }
+
+    loadRole()
+
     const loadAdmins = async () => {
       try {
         const adminsSnapshot = await getDocs(collection(db, 'admins'))
@@ -253,6 +278,140 @@ export default function AdminManagementTab() {
           </div>
         </div>
       </div>
+
+      {isOwner && (
+        <div className="bg-yellow-900/10 border border-yellow-500/20 rounded-lg p-6 mt-4">
+          <h3 className="text-lg font-bold text-white mb-2">Set Admin Role (Owner Only)</h3>
+          <p className="text-gray-400 text-sm mb-4">Enter a registered user's UID and choose a role. The server enforces owner-only permission.</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Target UID</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={targetUid}
+                  onChange={(e) => { setTargetUid(e.target.value); setResolvedUser(null) }}
+                  placeholder="User UID (e.g. XyZ123...) or leave empty to lookup"
+                  className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500"
+                />
+                <button
+                  onClick={async () => {
+                    if (!user) {
+                      setRoleMessage({ type: 'error', text: 'Sign in as owner to lookup' })
+                      setTimeout(() => setRoleMessage(null), 3000)
+                      return
+                    }
+                    const email = window.prompt('Lookup by email:')
+                    if (!email) return
+                    try {
+                      const token = await user.getIdToken()
+                      const res = await fetch(`/api/admin/users/lookup?email=${encodeURIComponent(email)}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                      })
+                      const data = await res.json()
+                      if (data.ok) {
+                        setTargetUid(data.uid)
+                        setResolvedUser({ uid: data.uid, email: data.email, displayName: data.displayName })
+                        setRoleMessage({ type: 'success', text: `Found user: ${data.displayName || data.email}` })
+                      } else {
+                        setRoleMessage({ type: 'error', text: data.error || 'User not found' })
+                      }
+                    } catch (err: any) {
+                      setRoleMessage({ type: 'error', text: err.message || 'Lookup failed' })
+                    } finally {
+                      setTimeout(() => setRoleMessage(null), 3000)
+                    }
+                  }}
+                  className="px-3 py-2 bg-white/6 rounded-lg text-white/80 border border-white/10 hover:bg-white/10"
+                >
+                  Find by email
+                </button>
+              </div>
+              {resolvedUser && (
+                <p className="text-sm text-gray-300 mt-2">Resolved: {resolvedUser.displayName || resolvedUser.email} ({resolvedUser.uid})</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
+              <select
+                value={roleToSet}
+                onChange={(e) => setRoleToSet(e.target.value as 'admin' | 'owner')}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-yellow-500"
+              >
+                <option value="admin">Admin</option>
+                <option value="owner">Owner (transfer)</option>
+              </select>
+            </div>
+
+            <div>
+              <button
+                onClick={async () => {
+                  if (!user) {
+                    setRoleMessage({ type: 'error', text: 'You must be signed in as owner' })
+                    setTimeout(() => setRoleMessage(null), 4000)
+                    return
+                  }
+                  if (!targetUid) {
+                    setRoleMessage({ type: 'error', text: 'Target UID is required' })
+                    setTimeout(() => setRoleMessage(null), 4000)
+                    return
+                  }
+
+                  setSettingRole(true)
+                  setRoleMessage(null)
+                  try {
+                    const token = await user.getIdToken()
+                    const res = await fetch('/api/admin/roles', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: JSON.stringify({ targetUid, role: roleToSet })
+                    })
+                    const data = await res.json()
+                    if (data.ok) {
+                      setRoleMessage({ type: 'success', text: data.message || 'Role updated' })
+                      setTargetUid('')
+                      // refresh local admins list
+                      setLoading(true)
+                      try {
+                        const adminsSnapshot = await getDocs(collection(db, 'admins'))
+                        const adminsList: AdminUser[] = []
+                        adminsSnapshot.forEach((d) => adminsList.push({ uid: d.id, ...(d.data() as any) } as AdminUser))
+                        setAdmins(adminsList)
+                      } catch (e) {
+                        console.error('Error refreshing admins:', e)
+                      } finally {
+                        setLoading(false)
+                      }
+                    } else {
+                      setRoleMessage({ type: 'error', text: data.error || data.message || 'Failed to set role' })
+                    }
+                  } catch (err: any) {
+                    setRoleMessage({ type: 'error', text: err.message || 'Request failed' })
+                  } finally {
+                    setSettingRole(false)
+                    setTimeout(() => setRoleMessage(null), 4000)
+                  }
+                }}
+                disabled={settingRole}
+                className="w-full py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-semibold rounded-lg hover:opacity-95 transition-all disabled:opacity-50"
+              >
+                {settingRole ? 'Setting...' : 'Set Role'}
+              </button>
+            </div>
+          </div>
+
+          {roleMessage && (
+            <div className={`mt-3 p-3 rounded-lg ${roleMessage.type === 'success' ? 'bg-green-900/20 text-green-300' : 'bg-red-900/20 text-red-300'}`}>
+              {roleMessage.text}
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">

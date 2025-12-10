@@ -6,21 +6,35 @@ export const dynamic = 'force-dynamic'
 // GET all categories
 export async function GET() {
   try {
+    // Fetch from 'categories' collection - same path used by admin and public pages
     const categoriesSnapshot = await adminDb
       .collection('categories')
-      .orderBy('order', 'asc')
       .get()
 
-    const categories = categoriesSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }))
+    // Map and normalize category data, sort by order field (with fallback)
+    const categories = categoriesSnapshot.docs
+      .map((doc) => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          name: data.name || data.title || '', // Support both 'name' and 'title' fields
+          slug: data.slug || '',
+          description: data.description || '',
+          icon: data.icon || '',
+          order: typeof data.order === 'number' ? data.order : 999,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt || null,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt || null,
+        }
+      })
+      .sort((a, b) => a.order - b.order)
 
-    return NextResponse.json({ ok: true, categories })
+    console.log(`📁 [Categories] Fetched ${categories.length} categories`)
+
+    return NextResponse.json({ success: true, categories })
   } catch (error) {
-    console.error('Error fetching categories:', error)
+    console.error('❌ [Categories] Error fetching categories:', error)
     return NextResponse.json(
-      { ok: false, message: 'Failed to fetch categories' },
+      { success: false, message: 'Failed to fetch categories', error: String(error) },
       { status: 500 }
     )
   }
@@ -34,7 +48,7 @@ export async function POST(request: Request) {
 
     if (!name || !slug) {
       return NextResponse.json(
-        { ok: false, message: 'Name and slug are required' },
+        { success: false, message: 'Name and slug are required' },
         { status: 400 }
       )
     }
@@ -48,7 +62,7 @@ export async function POST(request: Request) {
 
     if (!existingCategory.empty) {
       return NextResponse.json(
-        { ok: false, message: 'Category with this slug already exists' },
+        { success: false, message: 'Category with this slug already exists' },
         { status: 400 }
       )
     }
@@ -61,7 +75,6 @@ export async function POST(request: Request) {
       name,
       slug: slug.toLowerCase().replace(/\s+/g, '-'),
       description: description || '',
-      // Icon is optional; if not provided, we simply omit it
       ...(icon ? { icon } : {}),
       order,
       createdAt: new Date(),
@@ -71,14 +84,14 @@ export async function POST(request: Request) {
     const docRef = await adminDb.collection('categories').add(categoryData)
 
     return NextResponse.json({
-      ok: true,
+      success: true,
       message: 'Category created successfully',
       category: { id: docRef.id, ...categoryData },
     })
   } catch (error) {
     console.error('Error creating category:', error)
     return NextResponse.json(
-      { ok: false, message: 'Failed to create category' },
+      { success: false, message: 'Failed to create category' },
       { status: 500 }
     )
   }

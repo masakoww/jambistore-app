@@ -10,27 +10,42 @@ function startWebhookServer(client) {
   const PORT = process.env.PORT || 3001;
 
   app.post('/create-order-ticket', async (req, res) => {
-    console.log('📨 [Webhook] Create Order Ticket:', req.body);
-    const { orderId, customerEmail, productName, customerName, paymentProofURL, estimation } = req.body;
+    const body = req.body || {};
+    console.log('📨 [Webhook] Create Order Ticket called', { ip: req.ip || req.connection?.remoteAddress });
+    console.log('Headers:', req.headers);
+    console.log('Body keys:', Object.keys(body));
 
-    if (!orderId) return res.status(400).json({ success: false, message: 'Missing orderId' });
+    // Accept multiple possible field names
+    const orderId = body.orderId || body.id || body.order || null;
+    const customerEmail = body.customerEmail || body.email || body.userEmail || null;
+    const customerName = body.customerName || body.customer || body.username || body.userName || null;
+    const productName = body.productName || body.product || null;
+    const paymentProofURL = body.paymentProofURL || body.paymentProofUrl || body.paymentProof || null;
+    const estimation = body.estimation || body.eta || null;
+    const productImage = body.productImage || body.productImageUrl || null;
+    const amount = typeof body.amount === 'number' ? body.amount : (body.amount ? Number(body.amount) : null);
+
+    if (!orderId) {
+      console.warn('⚠️ [Webhook] Missing orderId in payload');
+      return res.status(400).json({ success: false, message: 'Missing orderId' });
+    }
 
     try {
-      // Construct order data object for helper
       const orderData = {
         id: orderId,
-        productName,
-        customerName,
-        customerEmail,
-        paymentProofURL,
-        estimation,
+        productName: productName || 'Unknown Product',
+        productImage: productImage || null,
+        customerName: customerName || null,
+        customerEmail: customerEmail || null,
+        paymentProofURL: paymentProofURL || null,
+        estimation: estimation || null,
+        amount: amount || null,
         status: 'PENDING'
       };
 
-      const channel = await createOrderTicket(client, orderData, 'buy');
+      const channel = await createOrderTicket(client, orderData, 'buy', 'website');
 
-      res.json({ success: true, channelId: channel.id });
-
+      res.json({ success: true, ticketId: channel.id, channelId: channel.id });
     } catch (error) {
       console.error('❌ Create Ticket Error:', error);
       res.status(500).json({ success: false, message: error.message });

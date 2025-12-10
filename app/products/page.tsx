@@ -318,8 +318,9 @@ export default function ProductsPage() {
                           src={displayData.image}
                           alt={product.title}
                           fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           className="object-cover"
-                          unoptimized
+                          loading="lazy"
                         />
                       </motion.div>
 
@@ -333,8 +334,9 @@ export default function ProductsPage() {
                           src={displayData.gif}
                           alt={`${product.title} animation`}
                           fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           className="object-cover"
-                          unoptimized
+                          loading="lazy"
                         />
                       </motion.div>
 

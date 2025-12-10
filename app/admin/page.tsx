@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Users, ShoppingCart, LogOut, Search, Settings, Package,
-  RefreshCw, Download, Star, Shield, Plus, MessageSquare
+  RefreshCw, Download, Star, Shield, Plus, MessageSquare, Ban
 } from "lucide-react";
 import { useAuth } from "@/lib/firebase";
 import { db } from "@/lib/firebase";
@@ -14,7 +14,7 @@ import { useWebsite } from "@/lib/websiteContext";
 import { useModal } from "@/contexts/ModalContext";
 import { 
   collection, query, onSnapshot, orderBy, doc, updateDoc, 
-  deleteDoc, Timestamp, getDocs
+  deleteDoc, Timestamp, getDocs, writeBatch
 } from "firebase/firestore";
 import AdminSettings from "@/components/AdminSettings";
 import SendAccountModal from "@/components/admin/SendAccountModal";
@@ -139,6 +139,9 @@ export default function AdminDashboard() {
   const [orderFilter, setOrderFilter] = useState<"all" | "pending" | "processing" | "completed" | "rejected">("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // Bulk Selection State
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+
   // Modal States
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<Order | null>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -157,8 +160,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!user || !isAdmin) return;
 
-
-    
     const loadingTimeout = setTimeout(() => {
       console.warn("⚠️ Loading timeout - forcing dashboard display");
       setIsLoading(false);
@@ -304,6 +305,59 @@ export default function AdminDashboard() {
     }
   };
 
+  // Bulk Selection Handlers
+  const handleSelectOrder = (orderId: string, selected: boolean) => {
+    const newSelected = new Set(selectedOrders);
+    if (selected) {
+      newSelected.add(orderId);
+    } else {
+      newSelected.delete(orderId);
+    }
+    setSelectedOrders(newSelected);
+  };
+
+  const handleSelectAll = (filteredOrders: Order[], selected: boolean) => {
+    if (selected) {
+      const newSelected = new Set(selectedOrders);
+      filteredOrders.forEach(order => {
+        if (order.status !== 'REJECTED') {
+          newSelected.add(order.id);
+        }
+      });
+      setSelectedOrders(newSelected);
+    } else {
+      setSelectedOrders(new Set());
+    }
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedOrders.size === 0) return;
+    
+    if (!window.confirm(`Are you sure you want to reject ${selectedOrders.size} orders? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const batch = writeBatch(db);
+      selectedOrders.forEach(orderId => {
+        const orderRef = doc(db, "orders", orderId);
+        batch.update(orderRef, {
+          status: "REJECTED",
+          rejectedAt: new Date(),
+          rejectedBy: user?.email || "Admin"
+        });
+      });
+
+      await batch.commit();
+      showAlert(`Successfully rejected ${selectedOrders.size} orders`, 'success');
+      setSelectedOrders(new Set());
+      handleRefreshOrders();
+    } catch (error) {
+      console.error("Error bulk rejecting orders:", error);
+      showAlert("Failed to reject some orders", 'error');
+    }
+  };
+
   // Loading States
   if (authLoading || !user || !isAdmin) {
     return (
@@ -420,6 +474,15 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <div className="flex gap-2">
+                {selectedOrders.size > 0 && (
+                  <button
+                    onClick={handleBulkReject}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all animate-in fade-in slide-in-from-right-5"
+                  >
+                    <Ban className="w-4 h-4" />
+                    Reject Selected ({selectedOrders.size})
+                  </button>
+                )}
                 <button
                   onClick={() => setShowManualOrderModal(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-lg transition-all"
@@ -527,7 +590,14 @@ export default function AdminDashboard() {
                     <table className="w-full">
                       <thead className="bg-white/5">
                         <tr>
-                          <th className="w-8"></th>
+                          <th className="w-8 px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedOrders.size === filteredOrders.filter(o => o.status !== 'REJECTED').length && filteredOrders.some(o => o.status !== 'REJECTED')}
+                              onChange={(e) => handleSelectAll(filteredOrders, e.target.checked)}
+                              className="w-4 h-4 rounded border-white/20 bg-black/40 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                            />
+                          </th>
                           <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">Order ID</th>
                           <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">Date</th>
                           <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">Customer</th>
@@ -550,6 +620,8 @@ export default function AdminDashboard() {
                               setShowRejectModal(true);
                             }}
                             onDelete={handleDeleteOrder}
+                            isSelected={selectedOrders.has(order.id)}
+                            onSelect={(selected) => handleSelectOrder(order.id, selected)}
                           />
                         ))}
                       </tbody>

@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { adminDb } from '@/lib/firebaseAdmin';
 import { Product } from '@/types/product';
+import { Collections } from '@/types/schema';
 import ProductClient from '@/components/ProductClient';
 
 // Revalidate product page every 60 seconds
@@ -11,6 +12,14 @@ interface PageProps {
   params: {
     slug: string;
   };
+}
+
+interface Review {
+  id: string;
+  rating: number;
+  comment: string;
+  maskedEmail: string;
+  createdAt: string;
 }
 
 /**
@@ -66,6 +75,39 @@ async function getProduct(slug: string): Promise<Product | null> {
 }
 
 /**
+ * Fetch product reviews from Firestore
+ */
+async function getReviews(productSlug: string): Promise<Review[]> {
+  try {
+    const snapshot = await adminDb
+      .collection(Collections.PRODUCT_REVIEWS)
+      .where('productSlug', '==', productSlug)
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get();
+
+    const reviews = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const createdAt = data.createdAt?.toDate?.() || data.createdAt;
+      return {
+        id: doc.id,
+        rating: data.rating,
+        comment: data.comment,
+        maskedEmail: data.customerEmail 
+          ? data.customerEmail.substring(0, 4) + '****'
+          : 'guest****',
+        createdAt: createdAt instanceof Date ? createdAt.toISOString() : String(createdAt),
+      };
+    });
+
+    return reviews;
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    return [];
+  }
+}
+
+/**
  * Generate metadata for SEO
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -92,13 +134,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  * Dynamic product page
  */
 export default async function ProductPage({ params }: PageProps) {
-  const product = await getProduct(params.slug);
+  const [product, reviews] = await Promise.all([
+    getProduct(params.slug),
+    getReviews(params.slug),
+  ]);
 
   // If product not found or not public, show 404
   if (!product) {
     notFound();
   }
 
-  // Pass product to client component (JSON serializable)
-  return <ProductClient product={product} />;
+  // Pass product and reviews to client component (JSON serializable)
+  return <ProductClient product={product} reviews={reviews} />;
 }

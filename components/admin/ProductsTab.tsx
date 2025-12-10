@@ -39,6 +39,7 @@ export default function ProductsTab({ currency }: ProductsTabProps) {
     gatewayIDR: 'pakasir',
     gatewayUSD: 'paypal',
     deliveryType: 'PRELOADED' as 'PRELOADED' | 'API' | 'MANUAL',
+    manualQRIS: [] as string[],
     heroImageUrl: '',
     heroGifUrl: '',
   })
@@ -67,18 +68,20 @@ export default function ProductsTab({ currency }: ProductsTabProps) {
       const response = await fetch('/api/categories')
       const data = await response.json()
 
-      if (data.ok) {
+      // API returns { success: true, categories: [...] }
+      if (data.success) {
         const list = (data.categories || []).map((cat: any) => ({
           id: cat.id,
-          name: cat.name,
-          slug: cat.slug,
+          name: cat.name || cat.title || '', // Support both field names
+          slug: cat.slug || '',
         }))
         setCategories(list)
+        console.log(`📁 [ProductsTab] Loaded ${list.length} categories`)
       } else {
-        console.error('Error loading categories:', data.message)
+        console.error('❌ [ProductsTab] Error loading categories:', data.message)
       }
     } catch (error) {
-      console.error('Error loading categories:', error)
+      console.error('❌ [ProductsTab] Error loading categories:', error)
     }
   }
 
@@ -187,6 +190,7 @@ export default function ProductsTab({ currency }: ProductsTabProps) {
       gatewayIDR: 'pakasir',
       gatewayUSD: 'paypal',
       deliveryType: 'PRELOADED',
+      manualQRIS: [],
       heroImageUrl: '',
       heroGifUrl: '',
     })
@@ -216,6 +220,7 @@ export default function ProductsTab({ currency }: ProductsTabProps) {
       gatewayIDR: typeof product.gateway === 'object' ? product.gateway.IDR || 'pakasir' : product.gateway || 'pakasir',
       gatewayUSD: typeof product.gateway === 'object' ? product.gateway.USD || 'paypal' : 'paypal',
       deliveryType: product.delivery?.type.toUpperCase() as 'PRELOADED' | 'API' | 'MANUAL' || 'PRELOADED',
+      manualQRIS: (product as any).paymentOptions?.manualQRIS || [],
       heroImageUrl: product.heroImageUrl || '',
       heroGifUrl: product.heroGifUrl || '',
     })
@@ -272,6 +277,13 @@ export default function ProductsTab({ currency }: ProductsTabProps) {
         delivery: {
           type: formData.deliveryType.toLowerCase(),
           instructions: 'Produk akan dikirim setelah pembayaran dikonfirmasi',
+        },
+        // Payment options for product-specific settings
+        paymentOptions: {
+          gatewayIDR: formData.gatewayIDR,
+          gatewayUSD: formData.gatewayUSD,
+          manualQRIS: formData.manualQRIS || [],
+          deliveryType: formData.deliveryType.toLowerCase(),
         },
         heroImageUrl: formData.heroImageUrl,
         heroGifUrl: formData.heroGifUrl,
@@ -902,6 +914,27 @@ export default function ProductsTab({ currency }: ProductsTabProps) {
                 </button>
               </div>
             </div>
+
+              {/* QRIS Payment Options */}
+              <div className="mt-6">
+                <label className="block text-gray-300 font-medium mb-2">Manual QRIS Options</label>
+                <select
+                  multiple
+                  value={formData.manualQRIS}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value);
+                    setFormData({ ...formData, manualQRIS: selected });
+                  }}
+                  className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  size={2}
+                >
+                  <option value="qris1">QRIS 1</option>
+                  <option value="qris2">QRIS 2</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-2">
+                  Hold Ctrl/Cmd to select multiple. Payment page will only show selected options.
+                </p>
+              </div>
           </div>
         </div>
       )}
@@ -942,3 +975,6 @@ export default function ProductsTab({ currency }: ProductsTabProps) {
     </div>
   )
 }
+
+
+

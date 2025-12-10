@@ -133,6 +133,9 @@ export const StaffLogTemplates = {
   paymentProofUploaded: (orderId: string, customerEmail: string, amount: string) =>
     `💳 Bukti pembayaran diterima - Order \`${orderId}\` - Customer: ${customerEmail} - Amount: ${amount}`,
   
+  orderPaid: (orderId: string, productName: string, customerEmail: string) =>
+    `💰 Pembayaran selesai - Order \`${orderId}\` - Product: **${productName}** - Customer: ${customerEmail}`,
+  
   manualOrderCreated: (orderId: string, productName: string, adminName: string) =>
     `➕ Admin **${adminName}** membuat order manual \`${orderId}\` - Product: **${productName}**`,
   

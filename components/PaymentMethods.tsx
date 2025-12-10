@@ -1,7 +1,3 @@
-'use client';
-
-import { CreditCard, Bitcoin } from 'lucide-react';
-
 export default function PaymentMethods() {
   return (
     <section className="py-20 px-4 bg-black">

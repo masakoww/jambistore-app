@@ -11,14 +11,13 @@ import { signInWithCustomToken } from "firebase/auth";
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn, isAdmin } = useAuth();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscordLoading, setIsDiscordLoading] = useState(false);
   const [error, setError] = useState("");
-
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -38,7 +37,6 @@ function LoginContent() {
           setIsDiscordLoading(false);
         });
     }
-
 
     const errorParam = searchParams.get('error');
     if (errorParam) {
@@ -67,22 +65,24 @@ function LoginContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Sign in with Firebase
-      const user = await signIn(email, password);
-      
-      // Redirect to home page
+      await signIn(email, password);
       router.push("/");
     } catch (err: any) {
       console.error("Login error:", err);
-      
 
       if (err.code === "auth/user-not-found") {
-        setError("No account found with this email. Please sign up first.");
-      } else if (err.code === "auth/wrong-password") {
-        setError("Incorrect password. Please try again.");
+        setError("Email not registered. Please sign up first.");
+      } else if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+        setError("Invalid email or password.");
       } else if (err.code === "auth/invalid-email") {
         setError("Invalid email address.");
       } else if (err.code === "auth/too-many-requests") {
@@ -185,7 +185,7 @@ function LoginContent() {
                     <span className="text-gray-400 text-sm">Remember me</span>
                   </label>
                   <Link
-                    href="#"
+                    href="/forgot-password"
                     className="text-pink-400 text-sm hover:underline"
                   >
                     Forgot password?
@@ -273,7 +273,7 @@ function LoginContent() {
               <div className="mt-8 text-center">
                 <p className="text-gray-500 text-xs">
                   By continuing, you agree to our{" "}
-                  <Link href="#" className="text-gray-400 hover:underline">
+                  <Link href="/tnc" className="text-gray-400 hover:underline">
                     Terms of Service
                   </Link>
                 </p>

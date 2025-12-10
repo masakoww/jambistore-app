@@ -140,6 +140,19 @@ export async function POST(request: NextRequest) {
       updatedBy: decodedToken.email,
     }, { merge: true });
 
+    // If setting someone as owner, add them to the system owners list (support multiple owners)
+    if (role === 'owner') {
+      try {
+        const systemRef = db.collection('settings').doc('system')
+        const systemDoc = await systemRef.get()
+        const currentOwners: string[] = (systemDoc.exists && systemDoc.data()?.ownerIds) || []
+        const nextOwners = Array.from(new Set([...(currentOwners || []), targetUid]))
+        await systemRef.set({ ownerIds: nextOwners, updatedAt: new Date().toISOString() }, { merge: true })
+      } catch (err) {
+        console.error('Failed to update system owners list:', err)
+      }
+    }
+
     console.log(`✅ Role updated for ${targetUid} to ${role} by ${decodedToken.email}`);
 
     return NextResponse.json({

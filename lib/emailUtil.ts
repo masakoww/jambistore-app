@@ -461,7 +461,7 @@ Product: ${data.productName}
 
 ${data.content || 'Your product content is attached or available in your dashboard.'}
 
-Need help? Contact us: ${siteUrl}/support
+Need help? Contact us: ${"https://discord.gg/KrWnqnbW6f"}
 
 Best regards,
 ${siteName}
@@ -473,7 +473,7 @@ ${siteName}
         <div style="background: #f4f4f4; padding: 15px; border-radius: 5px; margin: 20px 0;">
           <pre style="white-space: pre-wrap;">${data.content || 'Your product content is attached or available in your dashboard.'}</pre>
         </div>
-        <p>Need help? <a href="${siteUrl}/support">Contact Support</a></p>
+        <p>Need help? <a href="https://discord.gg/KrWnqnbW6f">Contact Support</a></p>
         <p>Best regards,<br>${siteName}</p>
       `;
       break;

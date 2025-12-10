@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { User, Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";
-import { useAuth } from "@/lib/firebase";
+import { useAuth, db } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDiscordLoading, setIsDiscordLoading] = useState(false);
   const [error, setError] = useState("");
   const [captchaVerified, setCaptchaVerified] = useState(false);
 
@@ -44,14 +46,23 @@ export default function RegisterPage() {
 
     try {
       // Create account with Firebase
-      await signUp(email, password);
+      const user = await signUp(email, password);
+
+      // Write Firestore profile
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        name: username,
+        email: email,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        role: "user", // Default role
+      });
       
       // Redirect to home page
       router.push("/");
     } catch (err: any) {
       console.error("Registration error:", err);
       
-
       if (err.code === "auth/email-already-in-use") {
         setError("An account with this email already exists. Please sign in instead.");
       } else if (err.code === "auth/invalid-email") {
@@ -64,6 +75,11 @@ export default function RegisterPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDiscordSignUp = () => {
+    setIsDiscordLoading(true);
+    window.location.href = '/api/auth/discord/signin';
   };
 
   // Simulate captcha verification
@@ -279,18 +295,27 @@ export default function RegisterPage() {
               {/* Discord Sign Up Button */}
               <button
                 type="button"
-                disabled
-                className="w-full py-4 bg-[#5865F2]/50 text-white/50 font-semibold rounded-xl flex items-center justify-center gap-3 cursor-not-allowed"
-                title="Discord sign-up coming soon - Connect Discord from your profile after signing up"
+                onClick={handleDiscordSignUp}
+                disabled={isDiscordLoading}
+                className="w-full py-4 bg-[#5865F2] hover:bg-[#4752C4] disabled:bg-[#5865F2]/50 text-white font-semibold rounded-xl flex items-center justify-center gap-3 transition-colors disabled:cursor-not-allowed"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z" />
-                </svg>
-                <span>Sign up with Discord (Coming Soon)</span>
+                {isDiscordLoading ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <span>Connecting to Discord...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-6 h-6"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z" />
+                    </svg>
+                    <span>Sign up with Discord</span>
+                  </>
+                )}
               </button>
 
               {/* Sign In Link */}
@@ -310,7 +335,7 @@ export default function RegisterPage() {
               <div className="mt-6 text-center">
                 <p className="text-gray-500 text-xs">
                   By clicking continue, you agree to our{" "}
-                  <Link href="#" className="text-gray-400 hover:underline">
+                  <Link href="/tnc" className="text-gray-400 hover:underline">
                     Terms of Service
                   </Link>
                 </p>

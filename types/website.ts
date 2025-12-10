@@ -17,7 +17,7 @@ export interface WebsiteSettings {
 }
 
 export const DEFAULT_WEBSITE_SETTINGS: WebsiteSettings = {
-  siteName: 'Anonymous Store',
+  siteName: 'Jambi Store',
   tagline: 'The premium cheating experience',
   primaryColor: '#ec4899',
   secondaryColor: '#8b5cf6',

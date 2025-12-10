@@ -146,4 +146,16 @@ export interface Product {
   backupGateway?: 'ipaymu' | 'pakasir' | 'tokopay';
   /** Estimated delivery time (e.g., "10 Minutes") */
   estimation?: string;
+  /** 
+   * Supported QRIS payment methods for this product
+   * Only these QRIS types will be shown in the payment selection UI
+   * Examples: ['qris1'], ['qris1', 'qris2'], ['qris1', 'paypal']
+   * Valid values: 'qris1', 'qris2', 'manual_qris_1', 'manual_qris_2', 'auto_qris', 'qris', 'paypal'
+   */
+  supportedQris?: string[];
+  /** Payment methods configuration */
+  paymentMethods?: {
+    qris?: string[];
+    paypal?: boolean;
+  };
 }

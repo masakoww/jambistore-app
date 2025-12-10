@@ -35,7 +35,7 @@ const rest = new REST({ version: '10' }).setToken(
         Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guildId),
         { body: commands }
       );
-      console.log(`✅ Successfully registered guild commands for guild ${guildId}`);
+      console.log(`✅ Successfully registered ${totalCommands} guild commands for guild ${guildId}`);
     } else {
       // Register global commands (takes up to 1 hour to update)
       await rest.put(
