@@ -187,24 +187,26 @@ function PaymentContent() {
   // Get supported QRIS types from product metadata
   // supportedQris can be: string[], string, or undefined
   // Examples: ['qris1'], ['qris1', 'qris2'], 'qris1', undefined
-  const getSupportedQris = (): string[] => {
-    const supported = productData?.supportedQris || productData?.paymentMethods?.qris;
-    
-    if (!supported) {
-      // No supportedQris defined - return empty (no QRIS available for this product)
-      return [];
-    }
-    
-    if (Array.isArray(supported)) {
-      return supported;
-    }
-    
-    if (typeof supported === 'string') {
-      return [supported];
-    }
-    
+const getSupportedQris = (): string[] => {
+  const supported = productData?.supportedQris || 
+                    productData?.paymentMethods?.qris || 
+                    productData?.paymentOptions?.manualQRIS;
+  
+  if (!supported) {
+    // No supportedQris defined - return empty (no QRIS available for this product)
     return [];
-  };
+  }
+  
+  if (Array.isArray(supported)) {
+    return supported;
+  }
+  
+  if (typeof supported === 'string') {
+    return [supported];
+  }
+  
+  return [];
+};
 
   const supportedQris = getSupportedQris();
 
@@ -352,25 +354,25 @@ function PaymentContent() {
     try {
       // Complete payment via API
       const response = await fetch(`/api/orders/${orderId}/complete-payment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paymentMethod: selectedMethod,
-          customerEmail: email,
-          proofUrl: proofUrl,
-          userId: user?.uid,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentMethod: selectedMethod,
+            customerEmail: email,
+            proofUrl: proofUrl,
+            userId: user?.uid,
           discordUserId: null,
-        }),
-      });
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to complete payment');
       }
 
       // Redirect to tracking page
-      router.replace(`/track?orderId=${orderId}`);
+        router.replace(`/track?orderId=${orderId}`);
     } catch (error: any) {
       console.error('Error completing payment:', error);
       setPaymentError(error.message || (language === 'id' 
@@ -514,22 +516,22 @@ function PaymentContent() {
                       </div>
                     ) : (
                       paymentMethods.map((method) => (
-                        <button
-                          key={method.id}
-                          onClick={() => handlePaymentMethodSelect(method.id)}
-                          className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all group"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${method.color} flex items-center justify-center`}>
-                              <method.icon className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="text-left">
-                              <h3 className="font-bold text-white">{method.name}</h3>
-                              <p className="text-sm text-gray-400">{method.description}</p>
-                            </div>
+                      <button
+                        key={method.id}
+                        onClick={() => handlePaymentMethodSelect(method.id)}
+                        className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${method.color} flex items-center justify-center`}>
+                            <method.icon className="w-6 h-6 text-white" />
                           </div>
-                          <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" />
-                        </button>
+                          <div className="text-left">
+                            <h3 className="font-bold text-white">{method.name}</h3>
+                            <p className="text-sm text-gray-400">{method.description}</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" />
+                      </button>
                       ))
                     )}
                   </div>
@@ -744,9 +746,9 @@ function PaymentContent() {
                 </p>
               </div>
             </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <Footer />
     </main>

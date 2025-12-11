@@ -14,17 +14,18 @@ export async function GET(request: NextRequest) {
     const code = searchParams.get('code');
     const error = searchParams.get('error');
     const state = searchParams.get('state'); // returnTo URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
     if (error) {
       console.error('Discord OAuth error:', error);
       return NextResponse.redirect(
-        new URL(`/login?error=discord_auth_failed`, request.url)
+        new URL(`/login?error=discord_auth_failed`, baseUrl)
       );
     }
 
     if (!code) {
       return NextResponse.redirect(
-        new URL('/login?error=no_code', request.url)
+        new URL('/login?error=no_code', baseUrl)
       );
     }
 
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
       return NextResponse.redirect(
-        new URL('/login?error=oauth_not_configured', request.url)
+        new URL('/login?error=oauth_not_configured', baseUrl)
       );
     }
 
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
     if (!tokenResponse.ok) {
       console.error('Discord token exchange failed:', await tokenResponse.text());
       return NextResponse.redirect(
-        new URL('/login?error=token_exchange_failed', request.url)
+        new URL('/login?error=token_exchange_failed', baseUrl)
       );
     }
 
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
     if (!userResponse.ok) {
       console.error('Discord user fetch failed:', await userResponse.text());
       return NextResponse.redirect(
-        new URL('/login?error=user_fetch_failed', request.url)
+        new URL('/login?error=user_fetch_failed', baseUrl)
       );
     }
 
@@ -166,7 +167,7 @@ export async function GET(request: NextRequest) {
 
     // Redirect to login page with token
     const returnUrl = state || '/';
-    const redirectUrl = new URL('/login', request.url);
+    const redirectUrl = new URL('/login', baseUrl);
     redirectUrl.searchParams.set('token', customToken);
     redirectUrl.searchParams.set('returnTo', returnUrl);
     redirectUrl.searchParams.set('discord', 'success');
@@ -175,8 +176,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Discord sign-in callback error:', error);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     return NextResponse.redirect(
-      new URL('/login?error=signin_failed', request.url)
+      new URL('/login?error=signin_failed', baseUrl)
     );
   }
 }

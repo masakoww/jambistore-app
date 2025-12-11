@@ -9,7 +9,7 @@ export async function POST(
   try {
     const { id } = params;
     const body = await request.json();
-    const { reason } = body;
+    const { reason, closeTicket } = body;
 
     if (!reason || !reason.trim()) {
       return NextResponse.json(
@@ -41,7 +41,8 @@ export async function POST(
 
     // Create audit log
     await createAuditLog(id, 'order_rejected', 'admin', {
-      reason: reason.trim()
+      reason: reason.trim(),
+      ticketClosed: closeTicket || false
     });
 
     // Send staff log notification
@@ -58,13 +59,39 @@ export async function POST(
 
     console.log(`❌ Order ${id} rejected:`, reason);
 
+    // Close Discord ticket if requested
+    if (closeTicket && orderData?.ticket_id) {
+      const botWebhookUrl = process.env.BOT_WEBHOOK_URL;
+      if (botWebhookUrl) {
+        try {
+          const closeResponse = await fetch(`${botWebhookUrl}/close-ticket`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: id,
+              ticketId: orderData.ticket_id,
+              reason: `Order rejected: ${reason.trim()}`,
+              status: 'REJECTED'
+            }),
+            signal: AbortSignal.timeout(5000)
+          });
 
-    // You can implement this based on your notification system
+          if (closeResponse.ok) {
+            console.log(`✅ Discord ticket ${orderData.ticket_id} closed for rejected order ${id}`);
+          } else {
+            console.error('❌ Failed to close Discord ticket:', await closeResponse.text());
+          }
+        } catch (webhookError) {
+          console.error('❌ Error calling bot webhook to close ticket:', webhookError);
+        }
+      }
+    }
 
     return NextResponse.json({
       ok: true,
       message: "Order rejected successfully",
       orderId: id,
+      ticketClosed: closeTicket && orderData?.ticket_id ? true : false,
     });
   } catch (error: any) {
     console.error("Error rejecting order:", error);

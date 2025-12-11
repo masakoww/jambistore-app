@@ -21,6 +21,7 @@ export default function RejectOrderModal({
   onSuccess,
 }: RejectOrderModalProps) {
   const [reason, setReason] = useState("");
+  const [closeTicket, setCloseTicket] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -45,6 +46,7 @@ export default function RejectOrderModal({
         },
         body: JSON.stringify({
           reason: reason.trim(),
+          closeTicket: closeTicket,
         }),
       });
 
@@ -55,6 +57,7 @@ export default function RejectOrderModal({
         onClose();
         // Reset form
         setReason("");
+        setCloseTicket(true);
       } else {
         setError(data.error || "Failed to reject order");
       }
@@ -129,6 +132,24 @@ export default function RejectOrderModal({
             <p className="text-xs text-gray-500 mt-1">
               This message will be sent to the customer
             </p>
+          </div>
+
+          {/* Close Discord Ticket Checkbox */}
+          <div className="flex items-start gap-3 p-4 bg-white/5 border border-white/10 rounded-lg">
+            <input
+              type="checkbox"
+              id="closeTicket"
+              checked={closeTicket}
+              onChange={(e) => setCloseTicket(e.target.checked)}
+              disabled={isSubmitting}
+              className="mt-1 w-4 h-4 bg-white/10 border border-white/20 rounded focus:ring-2 focus:ring-red-500 cursor-pointer"
+            />
+            <label htmlFor="closeTicket" className="flex-1 text-sm text-gray-300 cursor-pointer">
+              <span className="font-medium text-white">Close Discord Ticket</span>
+              <p className="text-xs text-gray-400 mt-1">
+                Automatically close the Discord ticket channel for this rejected order
+              </p>
+            </label>
           </div>
 
           {/* Actions */}

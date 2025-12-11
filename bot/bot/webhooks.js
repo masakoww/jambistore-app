@@ -74,6 +74,55 @@ function startWebhookServer(client) {
     }
   });
 
+  // Close ticket endpoint for rejected orders
+  app.post('/close-ticket', async (req, res) => {
+    const { orderId, ticketId, reason, status } = req.body;
+    
+    console.log('📨 [Webhook] Close Ticket called', { orderId, ticketId, status });
+
+    if (!ticketId) {
+      return res.status(400).json({ success: false, message: 'Missing ticketId' });
+    }
+
+    try {
+      const channel = await client.channels.fetch(ticketId);
+      
+      if (!channel) {
+        return res.status(404).json({ success: false, message: 'Channel not found' });
+      }
+
+      // Send closing message
+      const closeEmbed = new EmbedBuilder()
+        .setColor(0xFF0000)
+        .setTitle('🚫 Order Rejected & Closed')
+        .setDescription(`Order **${orderId}** has been rejected.`)
+        .addFields(
+          { name: 'Status', value: status || 'REJECTED', inline: true },
+          { name: 'Reason', value: reason || 'Rejected by admin', inline: false }
+        )
+        .setFooter({ text: 'Ticket will be closed automatically' })
+        .setTimestamp();
+
+      await channel.send({ embeds: [closeEmbed] });
+
+      // Close the channel after 5 seconds
+      setTimeout(async () => {
+        try {
+          await channel.delete();
+          console.log(`✅ Ticket channel ${ticketId} deleted for order ${orderId}`);
+        } catch (err) {
+          console.error('Error deleting channel:', err);
+        }
+      }, 5000);
+
+      res.json({ success: true, message: 'Ticket will be closed in 5 seconds' });
+
+    } catch (error) {
+      console.error('❌ Error closing ticket:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
   app.listen(PORT, () => {
     console.log(`🚀 Bot API Server running on port ${PORT}`);
   });
