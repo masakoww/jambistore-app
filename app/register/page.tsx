@@ -4,9 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscordLoading, setIsDiscordLoading] = useState(false);
   const [error, setError] = useState("");
-  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,14 +38,28 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!captchaVerified) {
-      setError("Please verify the captcha");
+    if (!turnstileToken) {
+      setError("Please complete the Cloudflare verification");
       return;
     }
 
     setIsLoading(true);
 
     try {
+      // Verify Turnstile token
+      const verifyResponse = await fetch('/api/auth/verify-turnstile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken })
+      });
+
+      const verifyData = await verifyResponse.json();
+      if (!verifyData.success) {
+        setError('Cloudflare verification failed. Please try again.');
+        setTurnstileToken(null);
+        return;
+      }
+
       // Create account with Firebase
       const user = await signUp(email, password);
 
@@ -80,13 +95,6 @@ export default function RegisterPage() {
   const handleDiscordSignUp = () => {
     setIsDiscordLoading(true);
     window.location.href = '/api/auth/discord/signin';
-  };
-
-  // Simulate captcha verification
-  const handleCaptchaClick = () => {
-    setTimeout(() => {
-      setCaptchaVerified(true);
-    }, 1000);
   };
 
   return (
@@ -211,47 +219,21 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* Captcha Simulation */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleCaptchaClick}
-                    disabled={captchaVerified}
-                    className={`w-full p-4 rounded-xl border transition-all ${
-                      captchaVerified
-                        ? "bg-green-500/20 border-green-500/30"
-                        : "bg-white/5 border-white/10 hover:border-white/20"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
-                            captchaVerified
-                              ? "bg-green-500 border-green-500"
-                              : "border-gray-500"
-                          }`}
-                        >
-                          {captchaVerified && <Check className="w-4 h-4 text-white" />}
-                        </div>
-                        <span
-                          className={`font-semibold ${
-                            captchaVerified ? "text-green-400" : "text-gray-400"
-                          }`}
-                        >
-                          {captchaVerified ? "Success!" : "I'm not a robot"}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <img
-                          src="https://www.cloudflare.com/favicon.ico"
-                          alt="Cloudflare"
-                          className="w-8 h-8"
-                        />
-                        <span className="text-xs text-gray-500">Cloudflare</span>
-                      </div>
-                    </div>
-                  </button>
+                {/* Cloudflare Turnstile */}
+                <div className="flex justify-center">
+                  <Turnstile
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
+                    onSuccess={(token) => setTurnstileToken(token)}
+                    onError={() => {
+                      setTurnstileToken(null);
+                      setError("Verification failed. Please try again.");
+                    }}
+                    onExpire={() => setTurnstileToken(null)}
+                    options={{
+                      theme: "dark",
+                      size: "normal"
+                    }}
+                  />
                 </div>
 
                 {/* Error Message */}

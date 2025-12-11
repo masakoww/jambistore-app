@@ -11,6 +11,7 @@
     "import:products": "node scripts/importProducts.mjs"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.4.0",
     "cloudinary": "^2.8.0",
     "firebase": "^12.5.0",
     "firebase-admin": "^13.6.0",
