@@ -184,20 +184,21 @@ export default function CategoriesTab() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Folder className="w-7 h-7 text-purple-400" />
-            Categories Management
+          <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3">
+            <Folder className="w-6 h-6 sm:w-7 sm:h-7 text-purple-400" />
+            Categories
           </h2>
-          <p className="text-gray-400 mt-1">Organize your products into categories</p>
+          <p className="text-gray-400 text-sm mt-1">Organize your products into categories</p>
         </div>
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all text-sm sm:text-base"
         >
-          <Plus className="w-5 h-5" />
-          Add Category
+          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="hidden sm:inline">Add Category</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </div>
 

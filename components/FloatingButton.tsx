@@ -72,17 +72,17 @@ export default function FloatingButtons() {
     <>
 
       {/* Chatbot Button */}
-      <div className="fixed bottom-6 right-32 z-50">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
 
         {!isChatOpen ? (
           <button
             onClick={() => setIsChatOpen(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            className="bg-purple-600 hover:bg-purple-700 text-white p-3 sm:p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 flex items-center justify-center"
           >
-            <MessageCircle className="w-6 h-6" />
+            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         ) : (
-          <div className="bg-gray-900 border border-white/10 rounded-2xl shadow-2xl w-80 sm:w-96 overflow-hidden">
+          <div className="bg-gray-900 border border-white/10 rounded-2xl shadow-2xl w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-[400px] overflow-hidden max-h-[calc(100vh-2rem)] flex flex-col">
             {/* Chat Header */}
             <div className="bg-purple-600 p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -109,7 +109,7 @@ export default function FloatingButtons() {
             </div>
 
             {/* Chat Messages */}
-            <div className="h-80 overflow-y-auto p-4 space-y-4 bg-black">
+            <div className="h-60 sm:h-80 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-black flex-1">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
                   {msg.sender === 'bot' && (
@@ -145,7 +145,7 @@ export default function FloatingButtons() {
             </div>
 
             {/* Chat Input */}
-            <div className="p-4 bg-gray-900 border-t border-white/10">
+            <div className="p-3 sm:p-4 bg-gray-900 border-t border-white/10">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -157,7 +157,7 @@ export default function FloatingButtons() {
                       ? 'Tulis pesan kamu...'
                       : 'Type your message...'
                   }
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 sm:px-4 py-2 text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
                 />
                 <button
                   onClick={handleSendMessage}

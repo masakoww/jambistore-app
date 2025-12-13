@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Users, ShoppingCart, LogOut, Search, Settings, Package,
-  RefreshCw, Download, Star, Shield, Plus, MessageSquare, Ban
+  RefreshCw, Download, Star, Shield, Plus, MessageSquare, Ban, Menu, X
 } from "lucide-react";
 import { useAuth } from "@/lib/firebase";
 import { db } from "@/lib/firebase";
@@ -148,6 +148,7 @@ export default function AdminDashboard() {
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showManualOrderModal, setShowManualOrderModal] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Auth Protection
   useEffect(() => {
@@ -387,12 +388,30 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-black flex">
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-purple-600 rounded-lg text-white shadow-lg"
+      >
+        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      </button>
+
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <motion.aside
         initial={{ x: -300 }}
         animate={{ x: 0 }}
         transition={{ duration: 0.3 }}
-        className="w-64 bg-[#0a0a0a] border-r border-white/10 p-6 fixed h-full z-10 overflow-y-auto"
+        className={`w-64 bg-[#0a0a0a] border-r border-white/10 p-6 fixed h-full z-40 overflow-y-auto
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          transition-transform duration-300 ease-in-out`}
       >
         <Link href="/" className="block mb-8">
           <h1 className="text-2xl font-bold text-white">
@@ -413,7 +432,10 @@ export default function AdminDashboard() {
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id as typeof activeTab)}
+              onClick={() => {
+                setActiveTab(item.id as typeof activeTab);
+                setIsMobileMenuOpen(false);
+              }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${
                 activeTab === item.id
                   ? "bg-purple-500/20 text-purple-400"
@@ -452,7 +474,7 @@ export default function AdminDashboard() {
       </motion.aside>
 
       {/* Main Content */}
-      <main className="ml-64 p-8 w-full">
+      <main className="lg:ml-64 p-4 sm:p-6 lg:p-8 w-full pt-16 lg:pt-8">
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <OverviewDashboard
@@ -466,36 +488,36 @@ export default function AdminDashboard() {
         {/* Orders Tab */}
         {activeTab === "orders" && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h3 className="text-2xl font-bold text-white">Order Management</h3>
+                <h3 className="text-xl sm:text-2xl font-bold text-white">Order Management</h3>
                 <p className="text-gray-400 text-sm mt-1">
                   Total: {totalOrders} orders
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {selectedOrders.size > 0 && (
                   <button
                     onClick={handleBulkReject}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all animate-in fade-in slide-in-from-right-5"
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all animate-in fade-in slide-in-from-right-5 text-sm sm:text-base"
                   >
                     <Ban className="w-4 h-4" />
-                    Reject Selected ({selectedOrders.size})
+                    <span className="hidden sm:inline">Reject Selected</span> ({selectedOrders.size})
                   </button>
                 )}
                 <button
                   onClick={() => setShowManualOrderModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-lg transition-all"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-lg transition-all text-sm sm:text-base"
                 >
                   <Plus className="w-4 h-4" />
-                  New Order
+                  <span className="hidden sm:inline">New Order</span>
                 </button>
                 <button
                   onClick={() => exportOrdersCSV(orders, currency, showAlert)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded-lg font-bold transition-all"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded-lg font-bold transition-all text-sm sm:text-base"
                 >
                   <Download className="w-4 h-4" />
-                  Export CSV
+                  <span className="hidden sm:inline">Export CSV</span>
                 </button>
               </div>
             </div>
