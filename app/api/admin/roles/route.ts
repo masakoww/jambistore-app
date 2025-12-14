@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/admin/roles - Initialize owner or update user role (Owner only)
+// POST /api/admin/roles - Initialize owner or update user role (Owner/Developer only)
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -78,12 +78,17 @@ export async function POST(request: NextRequest) {
         email: decodedToken.email,
         displayName: decodedToken.name || decodedToken.email,
         permissions: {
+          viewOverview: true,
           viewOrders: true,
           deliverProducts: true,
           deleteOrders: true,
           accessSettings: true,
           viewCustomers: true,
           manageAdmins: true,
+          manageProducts: true,
+          manageCategories: true,
+          viewReviews: true,
+          viewRevenue: true,
         },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -105,12 +110,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // For other role updates, verify requester is owner
+    // For other role updates, verify requester is owner or developer
     const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+    const requesterRole = userDoc.data()?.role;
     
-    if (!userDoc.exists || userDoc.data()?.role !== 'owner') {
+    if (!userDoc.exists || (requesterRole !== 'owner' && requesterRole !== 'developer')) {
       return NextResponse.json(
-        { ok: false, error: 'Only owner can manage roles' },
+        { ok: false, error: 'Only owner or developer can manage roles' },
         { status: 403 }
       );
     }
@@ -125,22 +131,76 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prevent changing owner role
-    if (targetUid === decodedToken.uid && role !== 'owner') {
+    // Validate role
+    if (!['owner', 'developer', 'admin'].includes(role)) {
+      return NextResponse.json(
+        { ok: false, error: 'Invalid role. Must be owner, developer, or admin' },
+        { status: 400 }
+      );
+    }
+
+    // Get target user's current role
+    const targetUserDoc = await db.collection('users').doc(targetUid).get();
+    const targetCurrentRole = targetUserDoc.data()?.role;
+
+    // Developer cannot modify owner's role
+    if (requesterRole === 'developer' && targetCurrentRole === 'owner') {
+      return NextResponse.json(
+        { ok: false, error: 'Developers cannot modify owner roles' },
+        { status: 403 }
+      );
+    }
+
+    // Developer cannot set someone as owner
+    if (requesterRole === 'developer' && role === 'owner') {
+      return NextResponse.json(
+        { ok: false, error: 'Only owner can transfer ownership' },
+        { status: 403 }
+      );
+    }
+
+    // Prevent changing own owner role
+    if (targetUid === decodedToken.uid && requesterRole === 'owner' && role !== 'owner') {
       return NextResponse.json(
         { ok: false, error: 'Cannot change your own owner role' },
         { status: 400 }
       );
     }
 
+    // Set full permissions for owner and developer roles
+    let finalPermissions = permissions || {};
+    if (role === 'owner' || role === 'developer') {
+      finalPermissions = {
+        viewOverview: true,
+        viewOrders: true,
+        deliverProducts: true,
+        deleteOrders: true,
+        accessSettings: true,
+        viewCustomers: true,
+        manageAdmins: true,
+        manageProducts: true,
+        manageCategories: true,
+        viewReviews: true,
+        viewRevenue: true,
+      };
+    }
+
     await db.collection('users').doc(targetUid).set({
       role,
-      permissions: permissions || {},
+      permissions: finalPermissions,
       updatedAt: new Date().toISOString(),
       updatedBy: decodedToken.email,
     }, { merge: true });
 
-    // If setting someone as owner, add them to the system owners list (support multiple owners)
+    // Also update the admins collection for display
+    await db.collection('admins').doc(targetUid).set({
+      role,
+      permissions: finalPermissions,
+      updatedAt: new Date().toISOString(),
+      updatedBy: decodedToken.email,
+    }, { merge: true });
+
+    // If setting someone as owner, add them to the system owners list
     if (role === 'owner') {
       try {
         const systemRef = db.collection('settings').doc('system')
@@ -168,7 +228,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/admin/roles/list - Get all admins (Owner only)
+// GET /api/admin/roles/list - Get all admins (Owner/Developer only)
 export async function DELETE(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -182,19 +242,20 @@ export async function DELETE(request: NextRequest) {
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
 
-    // Verify requester is owner
+    // Verify requester is owner or developer
     const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+    const requesterRole = userDoc.data()?.role;
     
-    if (!userDoc.exists || userDoc.data()?.role !== 'owner') {
+    if (!userDoc.exists || (requesterRole !== 'owner' && requesterRole !== 'developer')) {
       return NextResponse.json(
-        { ok: false, error: 'Only owner can list admins' },
+        { ok: false, error: 'Only owner or developer can list admins' },
         { status: 403 }
       );
     }
 
-    // Get all admins
+    // Get all admins (owner, developer, admin)
     const adminsSnapshot = await db.collection('users')
-      .where('role', 'in', ['owner', 'admin'])
+      .where('role', 'in', ['owner', 'developer', 'admin'])
       .get();
 
     const admins = adminsSnapshot.docs.map(doc => ({

@@ -139,6 +139,22 @@ export default function AdminDashboard() {
   const [orderFilter, setOrderFilter] = useState<"all" | "pending" | "processing" | "completed" | "rejected">("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // Role & Permissions State
+  const [userRole, setUserRole] = useState<string>('');
+  const [userPermissions, setUserPermissions] = useState<{
+    viewOverview?: boolean;
+    viewOrders?: boolean;
+    deliverProducts?: boolean;
+    deleteOrders?: boolean;
+    accessSettings?: boolean;
+    viewCustomers?: boolean;
+    manageAdmins?: boolean;
+    manageProducts?: boolean;
+    manageCategories?: boolean;
+    viewReviews?: boolean;
+    viewRevenue?: boolean;
+  }>({});
+  
   // Bulk Selection State
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
 
@@ -149,6 +165,49 @@ export default function AdminDashboard() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showManualOrderModal, setShowManualOrderModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Check if user has full access (owner or developer)
+  const hasFullAccess = userRole === 'owner' || userRole === 'developer';
+  
+  // Permission helper
+  const hasPermission = (permission: keyof typeof userPermissions) => {
+    if (hasFullAccess) return true;
+    return userPermissions[permission] === true;
+  };
+
+  // Load user role and permissions
+  useEffect(() => {
+    const loadUserRole = async () => {
+      if (!user) return;
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch('/api/admin/roles', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.ok) {
+          setUserRole(data.role || '');
+          setUserPermissions(data.permissions || {});
+          
+          // Set default tab based on permissions
+          if (data.role !== 'owner' && data.role !== 'developer') {
+            const perms = data.permissions || {};
+            if (perms.viewOverview) setActiveTab('overview');
+            else if (perms.viewOrders) setActiveTab('orders');
+            else if (perms.manageProducts) setActiveTab('products');
+            else if (perms.manageCategories) setActiveTab('categories');
+            else if (perms.viewCustomers) setActiveTab('customers');
+            else if (perms.manageAdmins) setActiveTab('admins');
+            else if (perms.viewReviews) setActiveTab('reviews');
+            else if (perms.accessSettings) setActiveTab('settings');
+          }
+        }
+      } catch (err) {
+        console.error('Error loading user role:', err);
+      }
+    };
+    loadUserRole();
+  }, [user]);
 
   // Auth Protection
   useEffect(() => {
@@ -421,15 +480,17 @@ export default function AdminDashboard() {
 
         <nav className="space-y-2">
           {[
-            { id: "overview", icon: LayoutDashboard, label: "Overview" },
-            { id: "orders", icon: ShoppingCart, label: "Orders", badge: totalOrders },
-            { id: "products", icon: Package, label: "Products" },
-            { id: "categories", icon: Package, label: "Categories" },
-            { id: "customers", icon: Users, label: "Customers", badge: totalCustomers },
-            { id: "admins", icon: Shield, label: "Admins" },
-            { id: "reviews", icon: Star, label: "Reviews" },
-            { id: "settings", icon: Settings, label: "Settings" },
-          ].map((item) => (
+            { id: "overview", icon: LayoutDashboard, label: "Overview", permission: "viewOverview" },
+            { id: "orders", icon: ShoppingCart, label: "Orders", badge: totalOrders, permission: "viewOrders" },
+            { id: "products", icon: Package, label: "Products", permission: "manageProducts" },
+            { id: "categories", icon: Package, label: "Categories", permission: "manageCategories" },
+            { id: "customers", icon: Users, label: "Customers", badge: totalCustomers, permission: "viewCustomers" },
+            { id: "admins", icon: Shield, label: "Admins", permission: "manageAdmins" },
+            { id: "reviews", icon: Star, label: "Reviews", permission: "viewReviews" },
+            { id: "settings", icon: Settings, label: "Settings", permission: "accessSettings" },
+          ]
+            .filter((item) => hasPermission(item.permission as keyof typeof userPermissions))
+            .map((item) => (
             <button
               key={item.id}
               onClick={() => {
@@ -476,7 +537,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="lg:ml-64 p-4 sm:p-6 lg:p-8 w-full pt-16 lg:pt-8">
         {/* Overview Tab */}
-        {activeTab === "overview" && (
+        {activeTab === "overview" && hasPermission('viewOverview') && (
           <OverviewDashboard
             orders={orders}
             customers={customers}
@@ -486,7 +547,7 @@ export default function AdminDashboard() {
         )}
 
         {/* Orders Tab */}
-        {activeTab === "orders" && (
+        {activeTab === "orders" && hasPermission('viewOrders') && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
@@ -656,12 +717,12 @@ export default function AdminDashboard() {
         )}
 
         {/* Other Tabs */}
-        {activeTab === "products" && <ProductsTab currency={currency} />}
-        {activeTab === "categories" && <CategoriesTab />}
-        {activeTab === "customers" && <CustomerManagementTab />}
-        {activeTab === "admins" && <AdminManagementTab />}
-        {activeTab === "reviews" && <ReviewsTab />}
-        {activeTab === "settings" && <AdminSettings user={user} />}
+        {activeTab === "products" && hasPermission('manageProducts') && <ProductsTab currency={currency} />}
+        {activeTab === "categories" && hasPermission('manageCategories') && <CategoriesTab />}
+        {activeTab === "customers" && hasPermission('viewCustomers') && <CustomerManagementTab />}
+        {activeTab === "admins" && hasPermission('manageAdmins') && <AdminManagementTab />}
+        {activeTab === "reviews" && hasPermission('viewReviews') && <ReviewsTab />}
+        {activeTab === "settings" && hasPermission('accessSettings') && <AdminSettings user={user} />}
       </main>
 
       {/* Modals */}

@@ -21,6 +21,7 @@ import { db, useAuth } from '@/lib/firebase'
 import { useModal } from '../../contexts/ModalContext'
 
 interface AdminPermissions {
+  viewOverview?: boolean
   viewOrders?: boolean
   deliverProducts?: boolean
   deleteOrders?: boolean
@@ -28,6 +29,8 @@ interface AdminPermissions {
   viewCustomers?: boolean
   manageAdmins?: boolean
   manageProducts?: boolean
+  manageCategories?: boolean
+  viewReviews?: boolean
   viewRevenue?: boolean
 }
 
@@ -35,7 +38,7 @@ interface AdminUser {
   uid: string
   email: string
   displayName?: string
-  role: 'owner' | 'admin' | 'moderator'
+  role: 'owner' | 'developer' | 'admin'
   status: 'active' | 'banned'
   permissions: AdminPermissions
   createdAt?: Date
@@ -54,11 +57,12 @@ export default function AdminManagementTab() {
   const [adminToDelete, setAdminToDelete] = useState<string | null>(null)
 
   const [formData, setFormData] = useState<{
-    role: 'admin' | 'moderator'
+    role: 'admin'
     permissions: AdminPermissions
   }>({
     role: 'admin',
     permissions: {
+      viewOverview: true,
       viewOrders: true,
       deliverProducts: true,
       deleteOrders: false,
@@ -66,15 +70,19 @@ export default function AdminManagementTab() {
       viewCustomers: true,
       manageAdmins: false,
       manageProducts: false,
+      manageCategories: false,
+      viewReviews: true,
       viewRevenue: false,
     }
   })
 
-  // Owner-only role setter (uses server endpoint)
+  // Owner/Developer role setter (uses server endpoint)
   const { user } = useAuth()
   const [isOwner, setIsOwner] = useState(false)
+  const [isDeveloper, setIsDeveloper] = useState(false)
+  const [currentUserRole, setCurrentUserRole] = useState<string>('')
   const [targetUid, setTargetUid] = useState('')
-  const [roleToSet, setRoleToSet] = useState<'admin' | 'owner'>('admin')
+  const [roleToSet, setRoleToSet] = useState<'admin' | 'developer' | 'owner'>('admin')
   const [settingRole, setSettingRole] = useState(false)
   const [roleMessage, setRoleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [resolvedUser, setResolvedUser] = useState<{ uid: string; email?: string; displayName?: string } | null>(null)
@@ -88,9 +96,11 @@ export default function AdminManagementTab() {
           headers: { Authorization: `Bearer ${token}` }
         })
         const data = await res.json()
+        setCurrentUserRole(data.role || '')
         setIsOwner(data.ok && data.role === 'owner')
+        setIsDeveloper(data.ok && data.role === 'developer')
       } catch (err) {
-        console.error('Error checking owner role:', err)
+        console.error('Error checking role:', err)
       }
     }
 
@@ -115,12 +125,14 @@ export default function AdminManagementTab() {
         }
 
         setAdmins(adminsList.sort((a, b) => {
-          // Owner first
+          // Owner first, then developer, then admin
           if (a.role === 'owner') return -1
           if (b.role === 'owner') return 1
+          if (a.role === 'developer') return -1
+          if (b.role === 'developer') return 1
           // Then by role
-          const roleOrder = { admin: 1, moderator: 2 }
-          return roleOrder[a.role] - roleOrder[b.role]
+          const roleOrder: Record<string, number> = { admin: 1 }
+          return (roleOrder[a.role] || 2) - (roleOrder[b.role] || 2)
         }))
       } catch (error) {
         console.error('Error loading admins:', error)
@@ -133,14 +145,20 @@ export default function AdminManagementTab() {
   }, [])
 
   const handleOpenEdit = (admin: AdminUser) => {
+    // Owner cannot be edited by anyone
     if (admin.role === 'owner') {
       showAlert('Cannot edit owner permissions', 'error')
+      return
+    }
+    // Developer can only be edited by owner
+    if (admin.role === 'developer' && !isOwner) {
+      showAlert('Only owner can edit developer permissions', 'error')
       return
     }
 
     setSelectedAdmin(admin)
     setFormData({
-      role: admin.role as 'admin' | 'moderator',
+      role: 'admin',
       permissions: { ...admin.permissions }
     })
     setShowEditModal(true)
@@ -156,12 +174,42 @@ export default function AdminManagementTab() {
         updatedAt: new Date()
       })
 
-      // Update local state
-      setAdmins(admins.map(admin => 
-        admin.uid === selectedAdmin.uid 
-          ? { ...admin, role: formData.role, permissions: formData.permissions }
-          : admin
-      ))
+      // Reload admins list to get fresh data
+      setLoading(true)
+      try {
+        const adminsSnapshot = await getDocs(collection(db, 'admins'))
+        const adminsList: AdminUser[] = []
+        adminsSnapshot.forEach((d) => {
+          const data = d.data()
+          adminsList.push({
+            uid: d.id,
+            email: data.email || '',
+            displayName: data.displayName,
+            role: data.role || 'admin',
+            status: data.status || 'active',
+            permissions: data.permissions || {},
+            createdAt: data.createdAt,
+            lastLogin: data.lastLogin,
+            ordersProcessed: data.ordersProcessed
+          } as AdminUser)
+        })
+        
+        // Sort: owner first, then developer, then admin
+        adminsList.sort((a, b) => {
+          if (a.role === 'owner') return -1
+          if (b.role === 'owner') return 1
+          if (a.role === 'developer') return -1
+          if (b.role === 'developer') return 1
+          const roleOrder: Record<string, number> = { admin: 1 }
+          return (roleOrder[a.role] || 2) - (roleOrder[b.role] || 2)
+        })
+        
+        setAdmins(adminsList)
+      } catch (e) {
+        console.error('Error refreshing admins:', e)
+      } finally {
+        setLoading(false)
+      }
 
       showAlert('Admin updated successfully', 'success')
       setShowEditModal(false)
@@ -176,6 +224,10 @@ export default function AdminManagementTab() {
       showAlert('Cannot ban the owner', 'error')
       return
     }
+    if (admin.role === 'developer' && !isOwner) {
+      showAlert('Only owner can ban developers', 'error')
+      return
+    }
 
     try {
       const newStatus = admin.status === 'active' ? 'banned' : 'active'
@@ -185,10 +237,41 @@ export default function AdminManagementTab() {
         updatedAt: new Date()
       })
 
-      // Update local state
-      setAdmins(admins.map(a => 
-        a.uid === admin.uid ? { ...a, status: newStatus } : a
-      ))
+      // Reload admins list to refresh stats
+      setLoading(true)
+      try {
+        const adminsSnapshot = await getDocs(collection(db, 'admins'))
+        const adminsList: AdminUser[] = []
+        adminsSnapshot.forEach((d) => {
+          const data = d.data()
+          adminsList.push({
+            uid: d.id,
+            email: data.email || '',
+            displayName: data.displayName,
+            role: data.role || 'admin',
+            status: data.status || 'active',
+            permissions: data.permissions || {},
+            createdAt: data.createdAt,
+            lastLogin: data.lastLogin,
+            ordersProcessed: data.ordersProcessed
+          } as AdminUser)
+        })
+        
+        adminsList.sort((a, b) => {
+          if (a.role === 'owner') return -1
+          if (b.role === 'owner') return 1
+          if (a.role === 'developer') return -1
+          if (b.role === 'developer') return 1
+          const roleOrder: Record<string, number> = { admin: 1 }
+          return (roleOrder[a.role] || 2) - (roleOrder[b.role] || 2)
+        })
+        
+        setAdmins(adminsList)
+      } catch (e) {
+        console.error('Error refreshing admins:', e)
+      } finally {
+        setLoading(false)
+      }
 
       showAlert(`Admin ${newStatus === 'banned' ? 'banned' : 'unbanned'} successfully`, 'success')
     } catch (error) {
@@ -279,10 +362,13 @@ export default function AdminManagementTab() {
         </div>
       </div>
 
-      {isOwner && (
+      {(isOwner || isDeveloper) && (
         <div className="bg-yellow-900/10 border border-yellow-500/20 rounded-lg p-6 mt-4">
-          <h3 className="text-lg font-bold text-white mb-2">Set Admin Role (Owner Only)</h3>
-          <p className="text-gray-400 text-sm mb-4">Enter a registered user's UID and choose a role. The server enforces owner-only permission.</p>
+          <h3 className="text-lg font-bold text-white mb-2">Set Admin Role {isOwner ? '(Owner)' : '(Developer)'}</h3>
+          <p className="text-gray-400 text-sm mb-4">
+            Enter a registered user's UID and choose a role. 
+            {isDeveloper && !isOwner && ' Note: As developer, you cannot modify owner roles.'}
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
             <div>
@@ -298,7 +384,7 @@ export default function AdminManagementTab() {
                 <button
                   onClick={async () => {
                     if (!user) {
-                      setRoleMessage({ type: 'error', text: 'Sign in as owner to lookup' })
+                      setRoleMessage({ type: 'error', text: 'Sign in to lookup' })
                       setTimeout(() => setRoleMessage(null), 3000)
                       return
                     }
@@ -337,11 +423,12 @@ export default function AdminManagementTab() {
               <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
               <select
                 value={roleToSet}
-                onChange={(e) => setRoleToSet(e.target.value as 'admin' | 'owner')}
+                onChange={(e) => setRoleToSet(e.target.value as 'admin' | 'developer' | 'owner')}
                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-yellow-500"
               >
-                <option value="admin">Admin</option>
-                <option value="owner">Owner (transfer)</option>
+                <option value="admin">Admin (customizable permissions)</option>
+                <option value="developer">Developer (full access)</option>
+                {isOwner && <option value="owner">Owner (transfer ownership)</option>}
               </select>
             </div>
 
@@ -444,9 +531,9 @@ export default function AdminManagementTab() {
                     <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
                       admin.role === 'owner'
                         ? 'bg-purple-900/30 text-purple-400 border border-purple-500/30'
-                        : admin.role === 'admin'
-                        ? 'bg-blue-900/30 text-blue-400 border border-blue-500/30'
-                        : 'bg-green-900/30 text-green-400 border border-green-500/30'
+                        : admin.role === 'developer'
+                        ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/30'
+                        : 'bg-blue-900/30 text-blue-400 border border-blue-500/30'
                     }`}>
                       {admin.role.toUpperCase()}
                     </span>
@@ -476,50 +563,75 @@ export default function AdminManagementTab() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {admin.permissions.viewOrders && (
-                      <span className="px-2 py-1 bg-green-900/20 text-green-400 text-xs rounded border border-green-500/30">
-                        📦 View Orders
+                    {/* Show "Full Access" badge for owner and developer */}
+                    {(admin.role === 'owner' || admin.role === 'developer') ? (
+                      <span className="px-2 py-1 bg-gradient-to-r from-purple-900/30 to-pink-900/30 text-purple-400 text-xs rounded border border-purple-500/30">
+                        ⭐ Full Access
                       </span>
-                    )}
-                    {admin.permissions.deliverProducts && (
-                      <span className="px-2 py-1 bg-green-900/20 text-green-400 text-xs rounded border border-green-500/30">
-                        ✅ Deliver Products
-                      </span>
-                    )}
-                    {admin.permissions.deleteOrders && (
-                      <span className="px-2 py-1 bg-red-900/20 text-red-400 text-xs rounded border border-red-500/30">
-                        🗑️ Delete Orders
-                      </span>
-                    )}
-                    {admin.permissions.accessSettings && (
-                      <span className="px-2 py-1 bg-purple-900/20 text-purple-400 text-xs rounded border border-purple-500/30">
-                        ⚙️ Access Settings
-                      </span>
-                    )}
-                    {admin.permissions.viewCustomers && (
-                      <span className="px-2 py-1 bg-blue-900/20 text-blue-400 text-xs rounded border border-blue-500/30">
-                        👥 View Customers
-                      </span>
-                    )}
-                    {admin.permissions.manageAdmins && (
-                      <span className="px-2 py-1 bg-yellow-900/20 text-yellow-400 text-xs rounded border border-yellow-500/30">
-                        🔐 Manage Admins
-                      </span>
-                    )}
-                    {admin.permissions.manageProducts && (
-                      <span className="px-2 py-1 bg-pink-900/20 text-pink-400 text-xs rounded border border-pink-500/30">
-                        📦 Manage Products
-                      </span>
-                    )}
-                    {admin.permissions.viewRevenue && (
-                      <span className="px-2 py-1 bg-orange-900/20 text-orange-400 text-xs rounded border border-orange-500/30">
-                        💰 View Revenue
-                      </span>
+                    ) : (
+                      <>
+                        {admin.permissions.viewOverview && (
+                          <span className="px-2 py-1 bg-cyan-900/20 text-cyan-400 text-xs rounded border border-cyan-500/30">
+                            📊 Overview
+                          </span>
+                        )}
+                        {admin.permissions.viewOrders && (
+                          <span className="px-2 py-1 bg-green-900/20 text-green-400 text-xs rounded border border-green-500/30">
+                            📦 View Orders
+                          </span>
+                        )}
+                        {admin.permissions.deliverProducts && (
+                          <span className="px-2 py-1 bg-green-900/20 text-green-400 text-xs rounded border border-green-500/30">
+                            ✅ Deliver Products
+                          </span>
+                        )}
+                        {admin.permissions.deleteOrders && (
+                          <span className="px-2 py-1 bg-red-900/20 text-red-400 text-xs rounded border border-red-500/30">
+                            🗑️ Delete Orders
+                          </span>
+                        )}
+                        {admin.permissions.manageProducts && (
+                          <span className="px-2 py-1 bg-pink-900/20 text-pink-400 text-xs rounded border border-pink-500/30">
+                            📦 Products
+                          </span>
+                        )}
+                        {admin.permissions.manageCategories && (
+                          <span className="px-2 py-1 bg-indigo-900/20 text-indigo-400 text-xs rounded border border-indigo-500/30">
+                            🏷️ Categories
+                          </span>
+                        )}
+                        {admin.permissions.viewCustomers && (
+                          <span className="px-2 py-1 bg-blue-900/20 text-blue-400 text-xs rounded border border-blue-500/30">
+                            👥 Customers
+                          </span>
+                        )}
+                        {admin.permissions.manageAdmins && (
+                          <span className="px-2 py-1 bg-yellow-900/20 text-yellow-400 text-xs rounded border border-yellow-500/30">
+                            🔐 Admins
+                          </span>
+                        )}
+                        {admin.permissions.viewReviews && (
+                          <span className="px-2 py-1 bg-amber-900/20 text-amber-400 text-xs rounded border border-amber-500/30">
+                            ⭐ Reviews
+                          </span>
+                        )}
+                        {admin.permissions.accessSettings && (
+                          <span className="px-2 py-1 bg-purple-900/20 text-purple-400 text-xs rounded border border-purple-500/30">
+                            ⚙️ Settings
+                          </span>
+                        )}
+                        {admin.permissions.viewRevenue && (
+                          <span className="px-2 py-1 bg-orange-900/20 text-orange-400 text-xs rounded border border-orange-500/30">
+                            💰 Revenue
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
 
-                {admin.role !== 'owner' && (
+                {/* Action buttons - show based on current user's permission */}
+                {admin.role !== 'owner' && (isOwner || (isDeveloper && admin.role !== 'developer')) && (
                   <div className="flex gap-2 ml-4">
                     <button
                       onClick={() => handleOpenEdit(admin)}
@@ -575,28 +687,28 @@ export default function AdminManagementTab() {
             <div className="space-y-6">
               <div>
                 <label className="block text-gray-300 font-medium mb-2">Role</label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'moderator' })}
-                  className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-white focus:border-purple-500 focus:outline-none"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="moderator">Moderator</option>
-                </select>
+                <p className="text-sm text-gray-500 mb-2">Admin role with customizable permissions below</p>
+                <div className="px-4 py-3 bg-blue-900/20 border border-blue-500/30 rounded-lg text-blue-400 font-medium">
+                  ADMIN
+                </div>
               </div>
 
               <div>
                 <label className="block text-gray-300 font-medium mb-3">Permissions</label>
+                <p className="text-sm text-gray-500 mb-3">Enable/disable dashboard sections for this admin</p>
                 <div className="space-y-2">
                   {[
-                    { key: 'viewOrders', label: '📦 View Orders', desc: 'Can view all orders' },
+                    { key: 'viewOverview', label: '📊 Overview Dashboard', desc: 'Can view the overview/statistics dashboard' },
+                    { key: 'viewOrders', label: '📦 View Orders', desc: 'Can view the orders section' },
                     { key: 'deliverProducts', label: '✅ Deliver Products', desc: 'Can mark orders as delivered' },
                     { key: 'deleteOrders', label: '🗑️ Delete Orders', desc: 'Can delete orders' },
-                    { key: 'accessSettings', label: '⚙️ Access Settings', desc: 'Can modify system settings' },
-                    { key: 'viewCustomers', label: '👥 View Customers', desc: 'Can view customer list' },
-                    { key: 'manageAdmins', label: '🔐 Manage Admins', desc: 'Can add/edit/remove admins' },
-                    { key: 'manageProducts', label: '📦 Manage Products', desc: 'Can create/edit/delete products' },
-                    { key: 'viewRevenue', label: '💰 View Revenue', desc: 'Can view revenue statistics' },
+                    { key: 'manageProducts', label: '📦 Manage Products', desc: 'Can access products section' },
+                    { key: 'manageCategories', label: '🏷️ Manage Categories', desc: 'Can access categories section' },
+                    { key: 'viewCustomers', label: '👥 View Customers', desc: 'Can access customers section' },
+                    { key: 'manageAdmins', label: '🔐 Manage Admins', desc: 'Can access admins section' },
+                    { key: 'viewReviews', label: '⭐ View Reviews', desc: 'Can access reviews section' },
+                    { key: 'accessSettings', label: '⚙️ Access Settings', desc: 'Can access settings section' },
+                    { key: 'viewRevenue', label: '💰 View Revenue', desc: 'Can view revenue statistics in overview' },
                   ].map((perm) => (
                     <label
                       key={perm.key}
