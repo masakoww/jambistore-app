@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/firebase";
 import { WebsiteProvider } from "@/lib/websiteContext";
 import { ModalProvider } from "@/contexts/ModalContext";
 import FloatingButtons from "@/components/FloatingButton";
+import DynamicFavicon from "@/components/DynamicFavicon";
 
 export const metadata: Metadata = {
   title: "Secret Room - No mercy cheating tools",
@@ -50,6 +51,7 @@ export default function RootLayout({
         <AuthProvider>
           <WebsiteProvider>
             <ModalProvider>
+              <DynamicFavicon />
               {children}
               <FloatingButtons />
             </ModalProvider>
