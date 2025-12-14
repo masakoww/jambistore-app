@@ -11,9 +11,18 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo/Brand */}
-          <div>
-            <h3 className="text-xl font-bold text-white mb-2">{settings.siteName}</h3>
-            <p className="text-gray-400 text-sm">{settings.footer.description}</p>
+          <div className="flex flex-col items-center md:items-start">
+            <div className="flex items-center gap-3 mb-2">
+              {settings.logoUrl && (
+                <img 
+                  src={settings.logoUrl} 
+                  alt={settings.siteName}
+                  className="h-10 w-10 object-contain"
+                />
+              )}
+              <h3 className="text-xl font-bold text-white">{settings.siteName}</h3>
+            </div>
+            <p className="text-gray-400 text-sm text-center md:text-left">{settings.footer.description}</p>
           </div>
 
           {/* Links */}

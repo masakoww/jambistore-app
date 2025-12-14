@@ -63,23 +63,38 @@ export default function Navbar() {
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="text-xl font-bold text-white"
+              className="flex items-center gap-2"
             >
-              <motion.span
-                className="inline-block"
-                whileHover={{ rotate: [0, -5, 5, -5, 0] }}
-                transition={{ duration: 0.5 }}
-              >
-                {settings.siteName.split('.')[0] || 'JAMBISTORE'}
-              </motion.span>
-              <motion.span
-                className="text-purple-500"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                .{settings.siteName.split('.')[1] || 'top'}
-              </motion.span>
+              {settings.logoUrl ? (
+                <>
+                  <img 
+                    src={settings.logoUrl} 
+                    alt={settings.siteName}
+                    className="h-8 w-8 object-contain"
+                  />
+                  <span className="text-xl font-bold text-white">
+                    {settings.siteName}
+                  </span>
+                </>
+              ) : (
+                <div className="text-xl font-bold text-white">
+                  <motion.span
+                    className="inline-block"
+                    whileHover={{ rotate: [0, -5, 5, -5, 0] }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {settings.siteName.split('.')[0] || 'JAMBISTORE'}
+                  </motion.span>
+                  <motion.span
+                    className="text-purple-500"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    .{settings.siteName.split('.')[1] || 'top'}
+                  </motion.span>
+                </div>
+              )}
             </motion.div>
 
             {/* Logo underline effect */}

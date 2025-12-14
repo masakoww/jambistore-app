@@ -459,14 +459,84 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
               </div>
 
               <div>
-                <label className="block text-white font-semibold mb-2">Logo URL</label>
-                <input
-                  type="text"
-                  value={websiteSettings.logoUrl}
-                  onChange={(e) => setWebsiteSettings({ ...websiteSettings, logoUrl: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                  placeholder="https://example.com/logo.png"
-                />
+                <label className="block text-white font-semibold mb-2">Logo</label>
+                <div className="space-y-4">
+                  {/* Logo Preview */}
+                  {websiteSettings.logoUrl && (
+                    <div className="flex items-center gap-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                      <img 
+                        src={websiteSettings.logoUrl} 
+                        alt="Logo Preview" 
+                        className="h-16 w-16 object-contain bg-black/50 rounded-lg p-2"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-400">Current Logo</p>
+                        <p className="text-xs text-gray-500 truncate max-w-md">{websiteSettings.logoUrl}</p>
+                      </div>
+                      <button
+                        onClick={() => setWebsiteSettings({ ...websiteSettings, logoUrl: '' })}
+                        className="px-3 py-1.5 text-sm text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/50 rounded-lg transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Upload Button */}
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      id="logo-upload"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('description', 'Website Logo');
+                        
+                        try {
+                          const response = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: formData
+                          });
+                          const data = await response.json();
+                          
+                          if (data.ok && data.url) {
+                            setWebsiteSettings({ ...websiteSettings, logoUrl: data.url });
+                          } else {
+                            alert('Failed to upload logo: ' + (data.message || 'Unknown error'));
+                          }
+                        } catch (error) {
+                          console.error('Upload error:', error);
+                          alert('Failed to upload logo');
+                        }
+                        
+                        e.target.value = '';
+                      }}
+                    />
+                    <label
+                      htmlFor="logo-upload"
+                      className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg cursor-pointer transition-colors text-center"
+                    >
+                      📤 Upload Logo Image
+                    </label>
+                  </div>
+                  
+                  {/* Or Manual URL Input */}
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Or enter URL manually</label>
+                    <input
+                      type="text"
+                      value={websiteSettings.logoUrl}
+                      onChange={(e) => setWebsiteSettings({ ...websiteSettings, logoUrl: e.target.value })}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                      placeholder="https://example.com/logo.png"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
