@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Mail, Loader2, ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { sendPasswordResetEmail, ActionCodeSettings } from "firebase/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -18,7 +18,13 @@ export default function ForgotPasswordPage() {
     setStatus(null);
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      // Configure custom password reset URL
+      const actionCodeSettings: ActionCodeSettings = {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password`,
+        handleCodeInApp: true,
+      };
+
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
       setStatus({
         type: 'success',
         message: "Check your email for the reset link."

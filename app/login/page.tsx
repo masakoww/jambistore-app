@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 import { useAuth, auth } from "@/lib/firebase";
 import { signInWithCustomToken } from "firebase/auth";
 
@@ -18,11 +18,18 @@ function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscordLoading, setIsDiscordLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     const token = searchParams.get('token');
     const returnTo = searchParams.get('returnTo');
     const discordSuccess = searchParams.get('discord');
+    const message = searchParams.get('message');
+
+    // Check for success messages
+    if (message === 'password_reset_success') {
+      setSuccessMessage('Your password has been reset successfully. Please sign in with your new password.');
+    }
 
     if (token && discordSuccess === 'success') {
       setIsDiscordLoading(true);
@@ -65,6 +72,7 @@ function LoginContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage("");
     
     if (!email || !password) {
       setError("Please enter both email and password.");
@@ -191,6 +199,18 @@ function LoginContent() {
                     Forgot password?
                   </Link>
                 </div>
+
+                {/* Success Message */}
+                {successMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-start gap-3"
+                  >
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-green-400 text-sm">{successMessage}</p>
+                  </motion.div>
+                )}
 
                 {/* Error Message */}
                 {error && (

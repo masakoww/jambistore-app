@@ -6,7 +6,7 @@ import { ModalProvider } from "@/contexts/ModalContext";
 import FloatingButtons from "@/components/FloatingButton";
 
 export const metadata: Metadata = {
-  title: "Anonymous - The Premium Cheating Experience",
+  title: "Secret Room - No mercy cheating tools",
   description: "The premium cheating experience",
 };
 
