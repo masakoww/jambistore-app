@@ -5,11 +5,44 @@
 :root {
   --background: #000000;
   --foreground: #ffffff;
+  
+  /* Primary brand colors */
+  --color-primary: #ec4899;
+  --color-secondary: #8b5cf6;
+  --color-accent: #06b6d4;
+  
+  /* Background colors */
+  --color-bg: #000000;
+  --color-surface: #0a0a0a;
+  --color-card: #111111;
+  
+  /* Text colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #d1d5db;
+  --color-text-muted: #6b7280;
+  
+  /* Gradient colors */
+  --color-gradient-from: #ec4899;
+  --color-gradient-to: #8b5cf6;
+  
+  /* Border and effects */
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-glow: rgba(236, 72, 153, 0.5);
+  
+  /* Status colors */
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  
+  /* RGB values for rgba() usage */
+  --color-primary-rgb: 236, 72, 153;
+  --color-secondary-rgb: 139, 92, 246;
+  --color-accent-rgb: 6, 182, 212;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background: var(--color-bg);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -24,6 +57,39 @@ body {
   
   .animate-spin-slow {
     animation: spin 3s linear infinite;
+  }
+  
+  .text-primary-dynamic {
+    color: var(--color-primary);
+  }
+  
+  .bg-primary-dynamic {
+    background-color: var(--color-primary);
+  }
+  
+  .gradient-primary {
+    background: linear-gradient(to right, var(--color-gradient-from), var(--color-gradient-to));
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 20px var(--color-glow);
+  }
+  
+  .shadow-glow-sm {
+    box-shadow: 0 0 10px var(--color-glow);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 font-semibold rounded-lg transition-all duration-200;
+    background: linear-gradient(to right, var(--color-gradient-from), var(--color-gradient-to));
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
   }
 }
 

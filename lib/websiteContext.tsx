@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { WebsiteSettings, DEFAULT_WEBSITE_SETTINGS } from '@/types/website';
+import { WebsiteSettings, DEFAULT_WEBSITE_SETTINGS, ColorScheme, hexToRgb } from '@/types/website';
 
 type Language = 'id' | 'en';
 type Currency = 'IDR' | 'USD';
@@ -14,6 +14,56 @@ interface WebsiteContextType {
   currency: Currency;
   switchLanguage: (lang: Language) => void;
   switchCurrency: (curr: Currency) => void;
+}
+
+// Apply color scheme to CSS variables
+function applyColorScheme(colorScheme: ColorScheme): void {
+  if (typeof document === 'undefined') return;
+  
+  const root = document.documentElement;
+  
+  // Primary brand colors
+  root.style.setProperty('--color-primary', colorScheme.primaryColor);
+  root.style.setProperty('--color-secondary', colorScheme.secondaryColor);
+  root.style.setProperty('--color-accent', colorScheme.accentColor);
+  
+  // Background colors
+  root.style.setProperty('--color-bg', colorScheme.backgroundColor);
+  root.style.setProperty('--color-surface', colorScheme.surfaceColor);
+  root.style.setProperty('--color-card', colorScheme.cardColor);
+  
+  // Text colors
+  root.style.setProperty('--color-text-primary', colorScheme.textPrimary);
+  root.style.setProperty('--color-text-secondary', colorScheme.textSecondary);
+  root.style.setProperty('--color-text-muted', colorScheme.textMuted);
+  
+  // Gradient colors
+  root.style.setProperty('--color-gradient-from', colorScheme.gradientFrom);
+  root.style.setProperty('--color-gradient-to', colorScheme.gradientTo);
+  
+  // Border and effects
+  root.style.setProperty('--color-border', colorScheme.borderColor);
+  root.style.setProperty('--color-glow', colorScheme.glowColor);
+  
+  // Status colors
+  root.style.setProperty('--color-success', colorScheme.successColor);
+  root.style.setProperty('--color-error', colorScheme.errorColor);
+  root.style.setProperty('--color-warning', colorScheme.warningColor);
+  
+  // RGB values for rgba() usage
+  const primaryRgb = hexToRgb(colorScheme.primaryColor);
+  const secondaryRgb = hexToRgb(colorScheme.secondaryColor);
+  const accentRgb = hexToRgb(colorScheme.accentColor);
+  
+  if (primaryRgb) {
+    root.style.setProperty('--color-primary-rgb', `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
+  }
+  if (secondaryRgb) {
+    root.style.setProperty('--color-secondary-rgb', `${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}`);
+  }
+  if (accentRgb) {
+    root.style.setProperty('--color-accent-rgb', `${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}`);
+  }
 }
 
 const WebsiteContext = createContext<WebsiteContextType>({
@@ -73,13 +123,13 @@ export function WebsiteProvider({ children }: { children: ReactNode }) {
       if (data.ok) {
         setSettings(data.settings);
         
-        // Apply colors to CSS variables
+        // Apply color scheme to CSS variables
+        if (data.settings.colorScheme) {
+          applyColorScheme(data.settings.colorScheme);
+        }
+        
+        // Update document title
         if (typeof document !== 'undefined') {
-          document.documentElement.style.setProperty('--color-primary', data.settings.primaryColor);
-          document.documentElement.style.setProperty('--color-secondary', data.settings.secondaryColor);
-          document.documentElement.style.setProperty('--color-accent', data.settings.accentColor);
-          
-          // Update document title
           document.title = data.settings.siteName;
         }
       }

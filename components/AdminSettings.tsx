@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Loader2, CheckCircle2, XCircle, Palette, Globe, CreditCard } from 'lucide-react';
+import { Save, Loader2, CheckCircle2, XCircle, Palette, Globe, CreditCard, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { PaymentGateway, PAYMENT_GATEWAYS } from '@/types/settings';
-import { WebsiteSettings, DEFAULT_WEBSITE_SETTINGS } from '@/types/website';
+import { WebsiteSettings, DEFAULT_WEBSITE_SETTINGS, ColorScheme, ColorPreset, COLOR_PRESETS, DEFAULT_COLOR_SCHEME, getColorPreset } from '@/types/website';
 
 interface AdminSettingsProps {
   user: any;
@@ -36,6 +36,10 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
   const [websiteSettings, setWebsiteSettings] = useState<WebsiteSettings>(DEFAULT_WEBSITE_SETTINGS);
   const [savingWebsite, setSavingWebsite] = useState(false);
   const [websiteMessage, setWebsiteMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  
+  // Color Scheme State
+  const [showAdvancedColors, setShowAdvancedColors] = useState(false);
+  const [colorPreviewMode, setColorPreviewMode] = useState(false);
 
   // Manual QRIS Settings State
   const [manualQRISSettings, setManualQRISSettings] = useState<any>({
@@ -467,69 +471,542 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
             </div>
           </div>
 
-          {/* Color Scheme */}
+          {/* Color Scheme - Enhanced */}
           <div className="bg-[#0a0a0a] rounded-2xl border border-white/10 p-6">
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Palette className="w-5 h-5" />
               Color Scheme
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-white font-semibold mb-2">Primary Color</label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={websiteSettings.primaryColor}
-                    onChange={(e) => setWebsiteSettings({ ...websiteSettings, primaryColor: e.target.value })}
-                    className="w-16 h-12 rounded-lg cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={websiteSettings.primaryColor}
-                    onChange={(e) => setWebsiteSettings({ ...websiteSettings, primaryColor: e.target.value })}
-                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 font-mono"
-                    placeholder="#ec4899"
-                  />
+            {/* Color Presets */}
+            <div className="mb-6">
+              <label className="block text-white font-semibold mb-3">Choose a Preset</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {COLOR_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => {
+                      setWebsiteSettings({
+                        ...websiteSettings,
+                        selectedPreset: preset.id,
+                        colorScheme: preset.colors,
+                        primaryColor: preset.colors.primaryColor,
+                        secondaryColor: preset.colors.secondaryColor,
+                        accentColor: preset.colors.accentColor,
+                      });
+                    }}
+                    className={`p-3 rounded-xl border-2 transition-all ${
+                      websiteSettings.selectedPreset === preset.id
+                        ? 'border-white ring-2 ring-white/30'
+                        : 'border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    <div 
+                      className="h-8 rounded-lg mb-2"
+                      style={{
+                        background: `linear-gradient(to right, ${preset.colors.gradientFrom}, ${preset.colors.gradientTo})`
+                      }}
+                    />
+                    <span className="text-sm text-white font-medium">{preset.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Main Colors */}
+            <div className="mb-6">
+              <label className="block text-white font-semibold mb-3">Main Colors</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Primary Color</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={websiteSettings.colorScheme?.primaryColor || websiteSettings.primaryColor}
+                      onChange={(e) => {
+                        const newColorScheme = { 
+                          ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                          primaryColor: e.target.value,
+                          gradientFrom: e.target.value 
+                        };
+                        setWebsiteSettings({ 
+                          ...websiteSettings, 
+                          primaryColor: e.target.value,
+                          colorScheme: newColorScheme,
+                          selectedPreset: 'custom'
+                        });
+                      }}
+                      className="w-16 h-12 rounded-lg cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={websiteSettings.colorScheme?.primaryColor || websiteSettings.primaryColor}
+                      onChange={(e) => {
+                        const newColorScheme = { 
+                          ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                          primaryColor: e.target.value,
+                          gradientFrom: e.target.value 
+                        };
+                        setWebsiteSettings({ 
+                          ...websiteSettings, 
+                          primaryColor: e.target.value,
+                          colorScheme: newColorScheme,
+                          selectedPreset: 'custom'
+                        });
+                      }}
+                      className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 font-mono"
+                      placeholder="#ec4899"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Secondary Color</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={websiteSettings.colorScheme?.secondaryColor || websiteSettings.secondaryColor}
+                      onChange={(e) => {
+                        const newColorScheme = { 
+                          ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                          secondaryColor: e.target.value,
+                          gradientTo: e.target.value 
+                        };
+                        setWebsiteSettings({ 
+                          ...websiteSettings, 
+                          secondaryColor: e.target.value,
+                          colorScheme: newColorScheme,
+                          selectedPreset: 'custom'
+                        });
+                      }}
+                      className="w-16 h-12 rounded-lg cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={websiteSettings.colorScheme?.secondaryColor || websiteSettings.secondaryColor}
+                      onChange={(e) => {
+                        const newColorScheme = { 
+                          ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                          secondaryColor: e.target.value,
+                          gradientTo: e.target.value 
+                        };
+                        setWebsiteSettings({ 
+                          ...websiteSettings, 
+                          secondaryColor: e.target.value,
+                          colorScheme: newColorScheme,
+                          selectedPreset: 'custom'
+                        });
+                      }}
+                      className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 font-mono"
+                      placeholder="#8b5cf6"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Accent Color</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={websiteSettings.colorScheme?.accentColor || websiteSettings.accentColor}
+                      onChange={(e) => {
+                        const newColorScheme = { 
+                          ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                          accentColor: e.target.value 
+                        };
+                        setWebsiteSettings({ 
+                          ...websiteSettings, 
+                          accentColor: e.target.value,
+                          colorScheme: newColorScheme,
+                          selectedPreset: 'custom'
+                        });
+                      }}
+                      className="w-16 h-12 rounded-lg cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={websiteSettings.colorScheme?.accentColor || websiteSettings.accentColor}
+                      onChange={(e) => {
+                        const newColorScheme = { 
+                          ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                          accentColor: e.target.value 
+                        };
+                        setWebsiteSettings({ 
+                          ...websiteSettings, 
+                          accentColor: e.target.value,
+                          colorScheme: newColorScheme,
+                          selectedPreset: 'custom'
+                        });
+                      }}
+                      className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 font-mono"
+                      placeholder="#06b6d4"
+                    />
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-white font-semibold mb-2">Secondary Color</label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={websiteSettings.secondaryColor}
-                    onChange={(e) => setWebsiteSettings({ ...websiteSettings, secondaryColor: e.target.value })}
-                    className="w-16 h-12 rounded-lg cursor-pointer"
+            {/* Advanced Colors Toggle */}
+            <button
+              onClick={() => setShowAdvancedColors(!showAdvancedColors)}
+              className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors mb-4"
+            >
+              {showAdvancedColors ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <span className="font-medium">Advanced Color Settings</span>
+            </button>
+
+            {showAdvancedColors && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4"
+              >
+                {/* Background Colors */}
+                <div>
+                  <label className="block text-gray-400 text-sm mb-3">Background Colors</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-gray-500 text-xs mb-1">Background</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={websiteSettings.colorScheme?.backgroundColor || '#000000'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              backgroundColor: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="w-12 h-10 rounded-lg cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={websiteSettings.colorScheme?.backgroundColor || '#000000'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              backgroundColor: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-500 text-xs mb-1">Surface</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={websiteSettings.colorScheme?.surfaceColor || '#0a0a0a'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              surfaceColor: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="w-12 h-10 rounded-lg cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={websiteSettings.colorScheme?.surfaceColor || '#0a0a0a'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              surfaceColor: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-500 text-xs mb-1">Card</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={websiteSettings.colorScheme?.cardColor || '#111111'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              cardColor: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="w-12 h-10 rounded-lg cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={websiteSettings.colorScheme?.cardColor || '#111111'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              cardColor: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Text Colors */}
+                <div>
+                  <label className="block text-gray-400 text-sm mb-3">Text Colors</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-gray-500 text-xs mb-1">Primary Text</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={websiteSettings.colorScheme?.textPrimary || '#ffffff'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              textPrimary: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="w-12 h-10 rounded-lg cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={websiteSettings.colorScheme?.textPrimary || '#ffffff'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              textPrimary: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-500 text-xs mb-1">Secondary Text</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={websiteSettings.colorScheme?.textSecondary || '#d1d5db'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              textSecondary: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="w-12 h-10 rounded-lg cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={websiteSettings.colorScheme?.textSecondary || '#d1d5db'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              textSecondary: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-500 text-xs mb-1">Muted Text</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={websiteSettings.colorScheme?.textMuted || '#6b7280'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              textMuted: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="w-12 h-10 rounded-lg cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={websiteSettings.colorScheme?.textMuted || '#6b7280'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              textMuted: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Glow Color */}
+                <div>
+                  <label className="block text-gray-400 text-sm mb-3">Effects</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-gray-500 text-xs mb-1">Glow Color</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={websiteSettings.colorScheme?.glowColor?.replace(/rgba?\([^)]+\)/, '') || websiteSettings.primaryColor}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              glowColor: `${e.target.value}80` // Add transparency
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="w-12 h-10 rounded-lg cursor-pointer border-0"
+                        />
+                        <input
+                          type="text"
+                          value={websiteSettings.colorScheme?.glowColor || 'rgba(236, 72, 153, 0.5)'}
+                          onChange={(e) => {
+                            const newColorScheme = { 
+                              ...(websiteSettings.colorScheme || DEFAULT_COLOR_SCHEME), 
+                              glowColor: e.target.value 
+                            };
+                            setWebsiteSettings({ 
+                              ...websiteSettings, 
+                              colorScheme: newColorScheme,
+                              selectedPreset: 'custom'
+                            });
+                          }}
+                          className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reset to Default */}
+                <div className="pt-4 border-t border-white/10">
+                  <button
+                    onClick={() => {
+                      const defaultPreset = COLOR_PRESETS[0];
+                      setWebsiteSettings({
+                        ...websiteSettings,
+                        selectedPreset: defaultPreset.id,
+                        colorScheme: defaultPreset.colors,
+                        primaryColor: defaultPreset.colors.primaryColor,
+                        secondaryColor: defaultPreset.colors.secondaryColor,
+                        accentColor: defaultPreset.colors.accentColor,
+                      });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white border border-white/10 rounded-lg hover:border-white/30 transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Reset to Default
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Live Preview */}
+            <div className="mt-6 p-4 rounded-xl border border-white/10 bg-black/50">
+              <h4 className="text-sm font-semibold text-gray-400 mb-3">Live Preview</h4>
+              <div 
+                className="p-4 rounded-lg"
+                style={{ backgroundColor: websiteSettings.colorScheme?.surfaceColor || '#0a0a0a' }}
+              >
+                <div 
+                  className="h-12 rounded-lg mb-3 flex items-center justify-center text-white font-bold"
+                  style={{
+                    background: `linear-gradient(to right, ${websiteSettings.colorScheme?.gradientFrom || websiteSettings.primaryColor}, ${websiteSettings.colorScheme?.gradientTo || websiteSettings.secondaryColor})`
+                  }}
+                >
+                  Gradient Button
+                </div>
+                <div className="flex gap-2 mb-3">
+                  <div 
+                    className="flex-1 h-8 rounded-lg"
+                    style={{ backgroundColor: websiteSettings.colorScheme?.primaryColor || websiteSettings.primaryColor }}
                   />
-                  <input
-                    type="text"
-                    value={websiteSettings.secondaryColor}
-                    onChange={(e) => setWebsiteSettings({ ...websiteSettings, secondaryColor: e.target.value })}
-                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 font-mono"
-                    placeholder="#8b5cf6"
+                  <div 
+                    className="flex-1 h-8 rounded-lg"
+                    style={{ backgroundColor: websiteSettings.colorScheme?.secondaryColor || websiteSettings.secondaryColor }}
+                  />
+                  <div 
+                    className="flex-1 h-8 rounded-lg"
+                    style={{ backgroundColor: websiteSettings.colorScheme?.accentColor || websiteSettings.accentColor }}
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-white font-semibold mb-2">Accent Color</label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={websiteSettings.accentColor}
-                    onChange={(e) => setWebsiteSettings({ ...websiteSettings, accentColor: e.target.value })}
-                    className="w-16 h-12 rounded-lg cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={websiteSettings.accentColor}
-                    onChange={(e) => setWebsiteSettings({ ...websiteSettings, accentColor: e.target.value })}
-                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 font-mono"
-                    placeholder="#06b6d4"
-                  />
-                </div>
+                <p style={{ color: websiteSettings.colorScheme?.textPrimary || '#ffffff' }} className="text-sm">
+                  Primary Text
+                </p>
+                <p style={{ color: websiteSettings.colorScheme?.textSecondary || '#d1d5db' }} className="text-sm">
+                  Secondary Text
+                </p>
+                <p style={{ color: websiteSettings.colorScheme?.textMuted || '#6b7280' }} className="text-sm">
+                  Muted Text
+                </p>
               </div>
             </div>
           </div>

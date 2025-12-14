@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, db } from '@/lib/firebaseAdmin';
+import { DEFAULT_COLOR_SCHEME } from '@/types/website';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -23,6 +24,8 @@ export async function GET(request: NextRequest) {
           primaryColor: '#ec4899',
           secondaryColor: '#8b5cf6',
           accentColor: '#06b6d4',
+          colorScheme: DEFAULT_COLOR_SCHEME,
+          selectedPreset: 'pink-purple',
           logoUrl: '',
           bannerUrls: [],
           paymentMethods: ['pakasir'],
@@ -35,9 +38,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Ensure colorScheme exists in response
+    const settings = settingsDoc.data();
+    if (!settings?.colorScheme) {
+      settings!.colorScheme = DEFAULT_COLOR_SCHEME;
+      settings!.selectedPreset = 'pink-purple';
+    }
+
     return NextResponse.json({
       ok: true,
-      settings: settingsDoc.data()
+      settings
     });
   } catch (error: any) {
     console.error('Error fetching settings:', error);
