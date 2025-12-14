@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";
 import { useAuth, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { Turnstile } from "@marsidev/react-turnstile";
