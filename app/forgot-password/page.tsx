@@ -19,9 +19,10 @@ export default function ForgotPasswordPage() {
 
     try {
       // Configure custom password reset URL
+      // IMPORTANT: handleCodeInApp must be false for Firebase to append oobCode properly
       const actionCodeSettings: ActionCodeSettings = {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password`,
-        handleCodeInApp: true,
+        url: 'https://secretroom-on.top/reset-password',
+        handleCodeInApp: false,
       };
 
       await sendPasswordResetEmail(auth, email, actionCodeSettings);
