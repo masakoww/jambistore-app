@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/firebase";
 import { WebsiteProvider } from "@/lib/websiteContext";
@@ -9,6 +9,13 @@ import DynamicFavicon from "@/components/DynamicFavicon";
 export const metadata: Metadata = {
   title: "Secret Room - No mercy cheating tools",
   description: "The premium cheating experience",
+  icons: { icon: '/favicon.ico' },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#000000',
 };
 
 export default function RootLayout({
@@ -19,33 +26,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <head>
-        {/* Preconnect to CDN for faster image loading */}
+        {/* Preconnect to external resources for faster loading */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
-        <style>{`
-          /* Custom Scrollbar */
-          ::-webkit-scrollbar {
-            width: 10px;
-          }
-
-          ::-webkit-scrollbar-track {
-            background: #000;
-          }
-
-          ::-webkit-scrollbar-thumb {
-            background: linear-gradient(to bottom, #ec4899, #a855f7);
-            border-radius: 5px;
-          }
-
-          ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(to bottom, #db2777, #9333ea);
-          }
-
-          /* Smooth transitions */
-          * {
-            scroll-behavior: smooth;
-          }
-        `}</style>
+        <link rel="dns-prefetch" href="https://cdn.discordapp.com" />
       </head>
       <body className="antialiased overflow-x-hidden">
         <AuthProvider>

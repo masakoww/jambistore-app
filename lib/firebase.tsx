@@ -11,7 +11,7 @@ import {
   setPersistence,
   browserLocalPersistence
 } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 // Firebase configuration from environment variables
@@ -39,6 +39,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  userRole: string;
   signIn: (email: string, password: string) => Promise<User>;
   signUp: (email: string, password: string) => Promise<User>;
   signOut: () => Promise<void>;
@@ -48,13 +49,14 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   isAdmin: false,
+  userRole: '',
   signIn: async () => { throw new Error('AuthProvider not initialized'); },
   signUp: async () => { throw new Error('AuthProvider not initialized'); },
   signOut: async () => { throw new Error('AuthProvider not initialized'); },
 });
 
-// Admin email list (you can move this to Firestore later)
-const ADMIN_EMAILS = [
+// Fallback admin emails (in case database check fails)
+const FALLBACK_ADMIN_EMAILS = [
   'krmendusa@gmail.com',
   'nadaffasakho@gmail.com'
 ];
@@ -63,11 +65,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      setIsAdmin(user ? ADMIN_EMAILS.includes(user.email || '') : false);
+      
+      if (user) {
+        // Check database for role
+        try {
+          // Check users collection first
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const role = userData?.role || '';
+            setUserRole(role);
+            // Owner, developer, and admin all have admin access
+            if (['owner', 'developer', 'admin'].includes(role)) {
+              setIsAdmin(true);
+              setLoading(false);
+              return;
+            }
+          }
+          
+          // Also check admins collection
+          const adminDoc = await getDoc(doc(db, 'admins', user.uid));
+          if (adminDoc.exists()) {
+            const adminData = adminDoc.data();
+            const role = adminData?.role || '';
+            setUserRole(role);
+            if (['owner', 'developer', 'admin'].includes(role)) {
+              setIsAdmin(true);
+              setLoading(false);
+              return;
+            }
+          }
+          
+          // Fallback to hardcoded emails
+          if (FALLBACK_ADMIN_EMAILS.includes(user.email || '')) {
+            setIsAdmin(true);
+            setUserRole('admin');
+          } else {
+            setIsAdmin(false);
+            setUserRole('user');
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+          // Fallback to email check
+          if (FALLBACK_ADMIN_EMAILS.includes(user.email || '')) {
+            setIsAdmin(true);
+            setUserRole('admin');
+          } else {
+            setIsAdmin(false);
+            setUserRole('user');
+          }
+        }
+      } else {
+        setIsAdmin(false);
+        setUserRole('');
+      }
+      
       setLoading(false);
     });
 
@@ -92,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     isAdmin,
+    userRole,
     signIn,
     signUp,
     signOut,

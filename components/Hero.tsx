@@ -21,11 +21,9 @@ export default function Hero() {
             priority
             unoptimized
             sizes="100vw"
-            quality={100}
+            quality={60}
             className="object-cover object-center"
-            style={{
-              imageRendering: '-webkit-optimize-contrast',
-            }}
+            loading="eager"
           />
           <div className="absolute inset-0 bg-black/50" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/80" />

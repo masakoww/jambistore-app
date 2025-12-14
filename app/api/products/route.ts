@@ -6,6 +6,9 @@ import { sendStaffLog, StaffLogTemplates } from '@/lib/staffLogger';
 import { successResponse, errorResponse } from '@/lib/apiResponse';
 import { logger } from '@/lib/logger';
 
+// Enable caching for public product listings
+export const revalidate = 60; // Revalidate every 60 seconds
+
 /**
  * GET /api/products
  * List products
