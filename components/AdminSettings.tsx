@@ -2,16 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Loader2, CheckCircle2, XCircle, Palette, Globe, CreditCard, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Save, Loader2, CheckCircle2, XCircle, Palette, Globe, CreditCard, RotateCcw, ChevronDown, ChevronUp, ImageIcon } from 'lucide-react';
 import { PaymentGateway, PAYMENT_GATEWAYS } from '@/types/settings';
 import { WebsiteSettings, DEFAULT_WEBSITE_SETTINGS, ColorScheme, ColorPreset, COLOR_PRESETS, DEFAULT_COLOR_SCHEME, getColorPreset } from '@/types/website';
+import { useWebsite } from '@/lib/websiteContext';
+
+// Available hero background presets from public/gif folder
+const HERO_BACKGROUND_PRESETS = [
+  { id: 'anonmyousbanner', name: 'Anonymous', url: '/gif/anonmyousbanner.gif' },
+  { id: 'background', name: 'Background', url: '/gif/background.gif' },
+  { id: 'cahyobanner', name: 'Cahyo', url: '/gif/cahyobanner.gif' },
+  { id: 'fivem', name: 'FiveM', url: '/gif/fivem.gif' },
+  { id: 'fortnite', name: 'Fortnite', url: '/gif/fornite.gif' },
+  { id: 'freefire', name: 'Free Fire', url: '/gif/freefirebanner.gif' },
+  { id: 'squad', name: 'Squad', url: '/gif/squad.gif' },
+];
 
 interface AdminSettingsProps {
   user: any;
 }
 
 export default function AdminSettings({ user }: AdminSettingsProps) {
+  const { refreshSettings } = useWebsite();
   const [activeSection, setActiveSection] = useState<'website' | 'payment' | 'manual-qris' | 'email' | 'admins'>('website');
+  
+  // Hero background upload state
+  const [uploadingHeroBackground, setUploadingHeroBackground] = useState(false);
   
   // Payment Methods State (NEW - Multiple toggles)
   const [paymentMethods, setPaymentMethods] = useState({
@@ -249,6 +265,9 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
       const data = await response.json();
 
       if (data.ok) {
+        // Refresh settings in context to apply color scheme and other changes immediately
+        await refreshSettings();
+        
         setWebsiteMessage({
           type: 'success',
           text: 'Website settings saved successfully',
@@ -459,6 +478,18 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
               </div>
 
               <div>
+                <label className="block text-white font-semibold mb-2">Browser Tab Title</label>
+                <input
+                  type="text"
+                  value={websiteSettings.browserTabTitle || ''}
+                  onChange={(e) => setWebsiteSettings({ ...websiteSettings, browserTabTitle: e.target.value })}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  placeholder={websiteSettings.siteName || 'Leave empty to use Site Name'}
+                />
+                <p className="text-xs text-gray-500 mt-1">This appears in the browser tab. Leave empty to use Site Name.</p>
+              </div>
+
+              <div>
                 <label className="block text-white font-semibold mb-2">Logo</label>
                 <div className="space-y-4">
                   {/* Logo Preview */}
@@ -538,6 +569,223 @@ export default function AdminSettings({ user }: AdminSettingsProps) {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Hero Background Section */}
+          <div className="bg-[#0a0a0a] rounded-2xl border border-white/10 p-6">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <ImageIcon className="w-5 h-5" />
+              Hero Background
+            </h3>
+            
+            <div className="space-y-6">
+              {/* Background Type Toggle */}
+              <div>
+                <label className="block text-white font-semibold mb-3">Background Type</label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setWebsiteSettings({ ...websiteSettings, heroBackgroundType: 'image' })}
+                    className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+                      (websiteSettings.heroBackgroundType || 'image') === 'image'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    🖼️ Image / GIF
+                  </button>
+                  <button
+                    onClick={() => setWebsiteSettings({ ...websiteSettings, heroBackgroundType: 'color' })}
+                    className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+                      websiteSettings.heroBackgroundType === 'color'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    🎨 Solid Color
+                  </button>
+                </div>
+              </div>
+
+              {/* Conditional Content based on type */}
+              {(websiteSettings.heroBackgroundType || 'image') === 'image' ? (
+                <div className="space-y-4">
+                  {/* Current Background Preview */}
+                  {websiteSettings.heroBackgroundUrl && (
+                    <div className="relative rounded-lg overflow-hidden border border-white/10">
+                      <img 
+                        src={websiteSettings.heroBackgroundUrl} 
+                        alt="Hero Background Preview" 
+                        className="w-full h-32 object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => setWebsiteSettings({ ...websiteSettings, heroBackgroundUrl: '' })}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-1 rounded">
+                        Current Background
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quick Select Gallery */}
+                  <div>
+                    <label className="block text-white font-semibold mb-3">Quick Select</label>
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                      {HERO_BACKGROUND_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          onClick={() => setWebsiteSettings({ ...websiteSettings, heroBackgroundUrl: preset.url })}
+                          className={`relative rounded-lg overflow-hidden border-2 transition-all aspect-video ${
+                            websiteSettings.heroBackgroundUrl === preset.url
+                              ? 'border-purple-500 ring-2 ring-purple-500/30'
+                              : 'border-white/10 hover:border-white/30'
+                          }`}
+                        >
+                          <img 
+                            src={preset.url} 
+                            alt={preset.name}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                          <span className="absolute bottom-1 left-1 text-[10px] text-white font-medium">{preset.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Upload Custom Background */}
+                  <div>
+                    <label className="block text-white font-semibold mb-2">Upload Custom Background</label>
+                    <p className="text-xs text-gray-500 mb-3">Max file size: 5MB. Supported formats: JPG, PNG, GIF, WebP</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="file"
+                        id="hero-bg-upload"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          
+                          // Check file size (5MB max)
+                          if (file.size > 5 * 1024 * 1024) {
+                            alert('File size must be less than 5MB');
+                            e.target.value = '';
+                            return;
+                          }
+                          
+                          setUploadingHeroBackground(true);
+                          
+                          try {
+                            // Convert file to base64
+                            const reader = new FileReader();
+                            reader.onload = async () => {
+                              const base64 = reader.result as string;
+                              
+                              const token = await user.getIdToken();
+                              const response = await fetch('/api/upload/hero', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                  image: base64,
+                                  filename: file.name
+                                })
+                              });
+                              const data = await response.json();
+                              
+                              if (data.ok && data.url) {
+                                setWebsiteSettings({ ...websiteSettings, heroBackgroundUrl: data.url });
+                              } else {
+                                alert('Failed to upload: ' + (data.message || 'Unknown error'));
+                              }
+                              setUploadingHeroBackground(false);
+                            };
+                            reader.onerror = () => {
+                              alert('Failed to read file');
+                              setUploadingHeroBackground(false);
+                            };
+                            reader.readAsDataURL(file);
+                          } catch (error) {
+                            console.error('Upload error:', error);
+                            alert('Failed to upload hero background');
+                            setUploadingHeroBackground(false);
+                          }
+                          
+                          e.target.value = '';
+                        }}
+                      />
+                      <label
+                        htmlFor="hero-bg-upload"
+                        className={`flex-1 px-4 py-3 text-white font-semibold rounded-lg cursor-pointer transition-colors text-center ${
+                          uploadingHeroBackground 
+                            ? 'bg-purple-600/50 cursor-not-allowed' 
+                            : 'bg-purple-600 hover:bg-purple-700'
+                        }`}
+                      >
+                        {uploadingHeroBackground ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Uploading...
+                          </span>
+                        ) : (
+                          '📤 Upload Image/GIF'
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {/* Manual URL Input */}
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Or enter URL manually</label>
+                    <input
+                      type="text"
+                      value={websiteSettings.heroBackgroundUrl || ''}
+                      onChange={(e) => setWebsiteSettings({ ...websiteSettings, heroBackgroundUrl: e.target.value })}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                      placeholder="https://example.com/background.gif"
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Solid Color Picker */
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-white font-semibold mb-2">Background Color</label>
+                    <div className="flex gap-3">
+                      <input
+                        type="color"
+                        value={websiteSettings.heroBackgroundColor || '#000000'}
+                        onChange={(e) => setWebsiteSettings({ ...websiteSettings, heroBackgroundColor: e.target.value })}
+                        className="w-20 h-12 rounded-lg cursor-pointer border-0"
+                      />
+                      <input
+                        type="text"
+                        value={websiteSettings.heroBackgroundColor || '#000000'}
+                        onChange={(e) => setWebsiteSettings({ ...websiteSettings, heroBackgroundColor: e.target.value })}
+                        className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 font-mono"
+                        placeholder="#000000"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Color Preview */}
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Preview</label>
+                    <div 
+                      className="w-full h-32 rounded-lg border border-white/10"
+                      style={{ backgroundColor: websiteSettings.heroBackgroundColor || '#000000' }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

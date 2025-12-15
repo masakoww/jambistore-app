@@ -22,11 +22,12 @@ export default function DynamicFavicon() {
       link.href = settings.logoUrl;
     }
 
-    // Update page title
-    if (settings.siteName) {
-      document.title = settings.siteName;
+    // Update page title - prefer browserTabTitle, fallback to siteName
+    const pageTitle = settings.browserTabTitle || settings.siteName;
+    if (pageTitle) {
+      document.title = pageTitle;
     }
-  }, [settings.logoUrl, settings.siteName]);
+  }, [settings.logoUrl, settings.siteName, settings.browserTabTitle]);
 
   return null;
 }

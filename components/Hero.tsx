@@ -8,23 +8,37 @@ import { useWebsite } from "@/lib/websiteContext";
 export default function Hero() {
   const { settings } = useWebsite();
 
+  // Determine background type and values
+  const backgroundType = settings.heroBackgroundType || 'image';
+  const backgroundUrl = settings.heroBackgroundUrl || '/gif/anonmyousbanner.gif';
+  const backgroundColor = settings.heroBackgroundColor || '#000000';
+
   return (
     <section
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 z-0">
-          <Image
-            src="/gif/anonmyousbanner.gif"
-            alt="Anonymous Banner Background"
-            fill
-            priority
-            unoptimized
-            sizes="100vw"
-            quality={60}
-            className="object-cover object-center"
-            loading="eager"
-          />
+          {backgroundType === 'color' ? (
+            // Solid color background
+            <div 
+              className="absolute inset-0"
+              style={{ backgroundColor }}
+            />
+          ) : (
+            // Image/GIF background
+            <Image
+              src={backgroundUrl}
+              alt="Hero Background"
+              fill
+              priority
+              unoptimized
+              sizes="100vw"
+              quality={60}
+              className="object-cover object-center"
+              loading="eager"
+            />
+          )}
           <div className="absolute inset-0 bg-black/50" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/80" />
         </div>

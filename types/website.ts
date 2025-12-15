@@ -200,6 +200,7 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
 export interface WebsiteSettings {
   siteName: string;
   tagline: string;
+  browserTabTitle?: string;
   colorScheme: ColorScheme;
   selectedPreset: string;
   primaryColor: string;
@@ -207,6 +208,10 @@ export interface WebsiteSettings {
   accentColor: string;
   logoUrl: string;
   bannerUrls: string[];
+  // Hero Background Settings
+  heroBackgroundType?: 'image' | 'color';
+  heroBackgroundUrl?: string;
+  heroBackgroundColor?: string;
   paymentMethods: string[];
   footer: {
     description: string;
@@ -219,6 +224,7 @@ export interface WebsiteSettings {
 export const DEFAULT_WEBSITE_SETTINGS: WebsiteSettings = {
   siteName: 'Jambi Store',
   tagline: 'The premium cheating experience',
+  browserTabTitle: '',
   colorScheme: DEFAULT_COLOR_SCHEME,
   selectedPreset: 'pink-purple',
   primaryColor: '#ec4899',
@@ -226,6 +232,9 @@ export const DEFAULT_WEBSITE_SETTINGS: WebsiteSettings = {
   accentColor: '#06b6d4',
   logoUrl: '',
   bannerUrls: [],
+  heroBackgroundType: 'image',
+  heroBackgroundUrl: '',
+  heroBackgroundColor: '#000000',
   paymentMethods: ['pakasir'],
   footer: {
     description: 'Premium game cheats and tools',
